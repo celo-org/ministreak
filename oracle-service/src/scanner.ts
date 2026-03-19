@@ -1,14 +1,3 @@
-/**
- * scanner.ts
- * Scans the Celo blockchain for each registered player's transactions
- * and identifies qualifying streak transactions for the current round.
- *
- * A qualifying streak tx is:
- *   - Not a self-send (from !== to)
- *   - USDT transfer value >= 0.50 USDT sent OR received
- *   - Occurred on today's UTC calendar day
- */
-
 import {
   createPublicClient,
   http,
@@ -30,27 +19,20 @@ const celoSepolia = defineChain({
 import { config } from "./config";
 import { log } from "./logger";
 
-// ─── ABIs ─────────────────────────────────────────────────────────────────────
+const BLOCKSCOUT_API = "https://celo-sepolia.blockscout.com/api/v2";
 
 const VAULT_ABI = parseAbi([
   "function getCurrentRoundId() external view returns (uint256)",
   "function getRoundPlayers(uint256 roundId) external view returns (address[])",
   "function rounds(uint256) external view returns (uint256 startTime, uint256 endTime, uint256 pot, uint8 status, uint256 playerCount)",
-  "function getPlayerStats(uint256 roundId, address player) external view returns (uint256 streak, uint256 volume, uint256 lastValidDay, bool claimed, bool entered)",
 ]);
-
-const ERC20_TRANSFER_ABI = parseAbi([
-  "event Transfer(address indexed from, address indexed to, uint256 value)",
-]);
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface QualifyingTx {
   player: Address;
   roundId: bigint;
   dayIndex: number;
-  volumeWei: bigint;
-  txHash: `0x${string}`;
+  txCount: number;
+  uniqueToCount: number;
 }
 
 export interface RoundInfo {
@@ -59,8 +41,6 @@ export interface RoundInfo {
   endTime: bigint;
   players: Address[];
 }
-
-// ─── Client ───────────────────────────────────────────────────────────────────
 
 let client: PublicClient | null = null;
 
@@ -74,51 +54,37 @@ function getClient(): PublicClient {
   return client;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Returns the UTC day index (0-6) from a given Unix timestamp,
- * relative to a round's start time (which is always a Monday).
- */
 function getDayIndex(timestamp: bigint, roundStartTime: bigint): number {
   const secondsIntoRound = Number(timestamp - roundStartTime);
-  return Math.floor(secondsIntoRound / 86400); // 86400 = seconds per day
+  return Math.floor(secondsIntoRound / 86400);
 }
 
-/**
- * Returns the start and end Unix timestamps for today (UTC).
- */
-function getTodayUTCWindow(): { start: bigint; end: bigint } {
+function getTodayUTCWindow(): { start: number; end: number } {
   const now = Date.now();
   const startOfDay = Math.floor(now / 86400000) * 86400;
   return {
-    start: BigInt(startOfDay),
-    end: BigInt(startOfDay + 86399),
+    start: startOfDay,
+    end: startOfDay + 86399,
   };
 }
 
-// ─── Main Scanner ─────────────────────────────────────────────────────────────
-
-/**
- * Fetch current round info from the vault contract.
- */
 export async function getCurrentRound(): Promise<RoundInfo> {
-  const client = getClient();
+  const c = getClient();
 
-  const roundId = await client.readContract({
+  const roundId = await c.readContract({
     address: config.vaultAddress,
     abi: VAULT_ABI,
     functionName: "getCurrentRoundId",
   });
 
-  const [startTime, endTime] = await client.readContract({
+  const [startTime, endTime] = await c.readContract({
     address: config.vaultAddress,
     abi: VAULT_ABI,
     functionName: "rounds",
     args: [roundId],
   }) as [bigint, bigint, bigint, number, bigint];
 
-  const players = await client.readContract({
+  const players = await c.readContract({
     address: config.vaultAddress,
     abi: VAULT_ABI,
     functionName: "getRoundPlayers",
@@ -126,113 +92,97 @@ export async function getCurrentRound(): Promise<RoundInfo> {
   }) as Address[];
 
   log.info(`Current round: ${roundId}, players: ${players.length}`);
-
   return { roundId, startTime, endTime, players };
 }
 
-/**
- * Scan a single player's USDT transfers for today and find qualifying txns.
- * Returns the qualifying tx with the highest volume if found.
- */
+async function fetchOutgoingTxs(
+  address: Address,
+  todayStart: number,
+  todayEnd: number
+): Promise<Array<{ to: string | null; timestamp: number }>> {
+  const txs: Array<{ to: string | null; timestamp: number }> = [];
+  let nextPageParams: string | null = null;
+
+  while (true) {
+    const url = nextPageParams
+      ? `${BLOCKSCOUT_API}/addresses/${address}/transactions?filter=from${nextPageParams}`
+      : `${BLOCKSCOUT_API}/addresses/${address}/transactions?filter=from`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      log.warn(`Blockscout API error for ${address}: ${res.status}`);
+      break;
+    }
+
+    const data = await res.json();
+    const items = data.items || [];
+
+    let foundOlderThanToday = false;
+    for (const item of items) {
+      const ts = Math.floor(new Date(item.timestamp).getTime() / 1000);
+
+      if (ts < todayStart) {
+        foundOlderThanToday = true;
+        break;
+      }
+
+      if (ts >= todayStart && ts <= todayEnd) {
+        txs.push({ to: item.to?.hash || null, timestamp: ts });
+      }
+    }
+
+    if (foundOlderThanToday || !data.next_page_params) break;
+
+    const params = data.next_page_params;
+    nextPageParams = `&block_number=${params.block_number}&index=${params.index}`;
+  }
+
+  return txs;
+}
+
 export async function scanPlayerToday(
   player: Address,
   roundInfo: RoundInfo
 ): Promise<QualifyingTx | null> {
-  const client = getClient();
   const { roundId, startTime } = roundInfo;
   const { start: todayStart, end: todayEnd } = getTodayUTCWindow();
 
-  // dayIndex relative to round start
-  const dayIndex = getDayIndex(todayStart, startTime);
+  const dayIndex = getDayIndex(BigInt(todayStart), startTime);
   if (dayIndex < 0 || dayIndex > 6) {
     log.debug(`Player ${player}: dayIndex ${dayIndex} out of range, skipping`);
     return null;
   }
 
-  const latestBlock = await client.getBlockNumber();
-  const fromBlock = latestBlock > BigInt(config.blocksLookback)
-    ? latestBlock - BigInt(config.blocksLookback)
-    : 0n;
+  const txs = await fetchOutgoingTxs(player, todayStart, todayEnd);
 
-  // Get all USDT Transfer events where player is sender or receiver
-  const [sentLogs, receivedLogs] = await Promise.all([
-    client.getLogs({
-      address: config.usdtAddress as Address,
-      event: ERC20_TRANSFER_ABI[0],
-      args: { from: player },
-      fromBlock,
-      toBlock: "latest",
-    }),
-    client.getLogs({
-      address: config.usdtAddress as Address,
-      event: ERC20_TRANSFER_ABI[0],
-      args: { to: player },
-      fromBlock,
-      toBlock: "latest",
-    }),
-  ]);
-
-  const allLogs = [...sentLogs, ...receivedLogs];
-  log.debug(`Player ${player}: found ${allLogs.length} USDT transfer logs`);
-
-  let bestVolume = 0n;
-  let bestTxHash: `0x${string}` | null = null;
-
-  for (const log_ of allLogs) {
-    const { from, to, value } = log_.args as {
-      from: Address;
-      to: Address;
-      value: bigint;
-    };
-
-    // Rule: no self-sends
-    if (from.toLowerCase() === to.toLowerCase()) continue;
-
-    // Rule: minimum 0.50 USDT
-    if (value < config.minVolumeWei) continue;
-
-    // Get block timestamp to check it's today UTC
-    const block = await client.getBlock({ blockNumber: log_.blockNumber! });
-    const blockTs = block.timestamp;
-
-    if (blockTs < todayStart || blockTs > todayEnd) continue;
-
-    // Track the highest-volume qualifying tx
-    if (value > bestVolume) {
-      bestVolume = value;
-      bestTxHash = log_.transactionHash!;
-    }
-  }
-
-  if (!bestTxHash) {
-    log.debug(`Player ${player}: no qualifying tx found today`);
+  if (txs.length === 0) {
+    log.debug(`Player ${player}: no outgoing txs found today`);
     return null;
   }
 
+  const uniqueToAddresses = new Set<string>();
+  for (const tx of txs) {
+    if (tx.to) {
+      uniqueToAddresses.add(tx.to.toLowerCase());
+    }
+  }
+
   log.info(
-    `Player ${player}: qualifying tx found. vol=${bestVolume}, day=${dayIndex}, tx=${bestTxHash}`
+    `Player ${player}: ${txs.length} txs, ${uniqueToAddresses.size} unique addrs, day=${dayIndex}`
   );
 
   return {
     player,
     roundId,
     dayIndex,
-    volumeWei: bestVolume,
-    txHash: bestTxHash,
+    txCount: txs.length,
+    uniqueToCount: uniqueToAddresses.size,
   };
 }
 
-/**
- * Scan all players in the current round for today's qualifying tx.
- * Returns all qualifying txns that haven't been submitted yet.
- */
 export async function scanAllPlayers(
   roundInfo: RoundInfo,
-  isAlreadySubmitted: (
-    roundId: string,
-    player: string,
-    dayIndex: number
-  ) => boolean
+  isAlreadySubmitted: (roundId: string, player: string, dayIndex: number) => boolean
 ): Promise<QualifyingTx[]> {
   const results: QualifyingTx[] = [];
 
@@ -241,9 +191,8 @@ export async function scanAllPlayers(
       const qualifying = await scanPlayerToday(player, roundInfo);
       if (!qualifying) continue;
 
-      const { dayIndex } = qualifying;
-      if (isAlreadySubmitted(roundInfo.roundId.toString(), player, dayIndex)) {
-        log.debug(`Player ${player} day ${dayIndex}: already submitted, skipping`);
+      if (isAlreadySubmitted(roundInfo.roundId.toString(), player, qualifying.dayIndex)) {
+        log.debug(`Player ${player} day ${qualifying.dayIndex}: already submitted, skipping`);
         continue;
       }
 

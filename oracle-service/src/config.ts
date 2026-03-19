@@ -12,12 +12,6 @@ export const config = {
   rpcUrl: process.env.CELO_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org",
   vaultAddress: required("VAULT_ADDRESS") as `0x${string}`,
   oracleAddress: required("ORACLE_ADDRESS") as `0x${string}`,
-  usdtAddress:
-    (process.env.USDT_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`,
-  minVolumeUsdt: parseFloat(process.env.MIN_VOLUME_USDT || "0.5"),
-  minVolumeWei: BigInt(
-    Math.floor(parseFloat(process.env.MIN_VOLUME_USDT || "0.5") * 1e6)
-  ),
   dbPath: process.env.DB_PATH || "./oracle.db",
   webhookUrl: process.env.WEBHOOK_ALERT_URL || "",
   minCeloBalance: parseFloat(process.env.MIN_CELO_BALANCE || "0.1"),

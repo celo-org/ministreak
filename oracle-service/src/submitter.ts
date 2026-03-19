@@ -13,16 +13,26 @@ import {
   type Address,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { celoAlfajores } from "viem/chains";
+import { defineChain } from "viem";
 import { config } from "./config";
 import { log } from "./logger";
 import type { QualifyingTx } from "./scanner";
 
+const celoSepolia = defineChain({
+  id: 11142220,
+  name: "Celo Sepolia",
+  nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
+  rpcUrls: {
+    default: { http: ["https://forno.celo-sepolia.celo-testnet.org"] },
+    public: { http: ["https://forno.celo-sepolia.celo-testnet.org"] },
+  },
+});
+
 // ─── ABIs ─────────────────────────────────────────────────────────────────────
 
 const ORACLE_ABI = parseAbi([
-  "function submitStreak(address player, uint256 roundId, uint256 dayIndex, uint256 volume) external",
-  "function batchSubmitStreaks(address[] calldata players, uint256[] calldata roundIds, uint256[] calldata dayIndexes, uint256[] calldata volumes) external",
+  "function submitStreak(address player, uint256 roundId, uint8 dayIndex, uint32 txCount, uint16 uniqueToCount) external",
+  "function batchSubmitStreaks(address[] calldata players, uint256[] calldata roundIds, uint8[] calldata dayIndexes, uint32[] calldata txCounts, uint16[] calldata uniqueToCounts) external",
   "function isSubmitted(address player, uint256 roundId, uint256 dayIndex) external view returns (bool)",
 ]);
 
@@ -40,13 +50,13 @@ function getClients() {
     );
 
     publicClient = createPublicClient({
-      chain: celoAlfajores,
+      chain: celoSepolia,
       transport: http(config.rpcUrl),
     });
 
     walletClient = createWalletClient({
       account,
-      chain: celoAlfajores,
+      chain: celoSepolia,
       transport: http(config.rpcUrl),
     });
   }
@@ -70,7 +80,7 @@ export async function checkAndAlertBalance(): Promise<void> {
 
   if (balanceCelo < config.minCeloBalance && config.webhookUrl) {
     await sendAlert(
-      `[CeloGrind Oracle] LOW BALANCE WARNING\n` +
+      `[MiniStreak Oracle] LOW BALANCE WARNING\n` +
       `Wallet: ${account.address}\n` +
       `Balance: ${balanceCelo.toFixed(4)} CELO\n` +
       `Minimum: ${config.minCeloBalance} CELO\n` +
@@ -103,7 +113,7 @@ export async function submitStreak(qualifying: QualifyingTx): Promise<string> {
 
   log.info(
     `Submitting streak: player=${qualifying.player}, round=${qualifying.roundId}, ` +
-    `day=${qualifying.dayIndex}, vol=${formatEther(qualifying.volumeWei)} cUSD`
+    `day=${qualifying.dayIndex}, txCount=${qualifying.txCount}, uniqueTo=${qualifying.uniqueToCount}`
   );
 
   // Simulate first to catch reverts early
@@ -115,7 +125,8 @@ export async function submitStreak(qualifying: QualifyingTx): Promise<string> {
       qualifying.player,
       qualifying.roundId,
       BigInt(qualifying.dayIndex),
-      qualifying.volumeWei,
+      qualifying.txCount,
+      qualifying.uniqueToCount,
     ],
     account: walletClient.account!,
   });
@@ -128,7 +139,8 @@ export async function submitStreak(qualifying: QualifyingTx): Promise<string> {
       qualifying.player,
       qualifying.roundId,
       BigInt(qualifying.dayIndex),
-      qualifying.volumeWei,
+      qualifying.txCount,
+      qualifying.uniqueToCount,
     ],
     // Legacy tx mode for Celo (no maxFeePerGas / maxPriorityFeePerGas)
     gasPrice: BigInt(5_000_000_000), // 5 gwei
@@ -161,7 +173,8 @@ export async function batchSubmitStreaks(
   const players = qualifyingList.map((q) => q.player);
   const roundIds = qualifyingList.map((q) => q.roundId);
   const dayIndexes = qualifyingList.map((q) => BigInt(q.dayIndex));
-  const volumes = qualifyingList.map((q) => q.volumeWei);
+  const txCounts = qualifyingList.map((q) => q.txCount);
+  const uniqueToCounts = qualifyingList.map((q) => q.uniqueToCount);
 
   log.info(`Batch submitting ${qualifyingList.length} streak proofs...`);
 
@@ -169,7 +182,7 @@ export async function batchSubmitStreaks(
     address: config.oracleAddress,
     abi: ORACLE_ABI,
     functionName: "batchSubmitStreaks",
-    args: [players, roundIds, dayIndexes, volumes],
+    args: [players, roundIds, dayIndexes, txCounts, uniqueToCounts],
     gasPrice: BigInt(5_000_000_000),
   });
 

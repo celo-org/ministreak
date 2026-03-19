@@ -1,12 +1,12 @@
 /**
  * index.ts
- * Main entry point for the CeloGrind Oracle Service.
+ * Main entry point for the MiniStreak Oracle Service.
  *
  * Runs on a cron schedule (default: every hour).
  * Each run:
  *   1. Checks oracle wallet CELO balance (alerts if low)
  *   2. Fetches current round and all registered players
- *   3. Scans each player's cUSD transactions for today
+ *   3. Scans each player's outgoing transactions for today
  *   4. Submits qualifying streak proofs to StreakOracle.sol
  *   5. Logs all submissions to SQLite to avoid double-submits
  */
@@ -64,7 +64,8 @@ async function runOracle(): Promise<void> {
           q.roundId.toString(),
           q.player,
           q.dayIndex,
-          q.volumeWei.toString(),
+          q.txCount,
+          q.uniqueToCount,
           txHash
         );
 
@@ -98,7 +99,7 @@ async function runOracle(): Promise<void> {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-log.info(`CeloGrind Oracle Service starting...`);
+log.info(`MiniStreak Oracle Service starting...`);
 log.info(`Vault:   ${config.vaultAddress}`);
 log.info(`Oracle:  ${config.oracleAddress}`);
 log.info(`RPC:     ${config.rpcUrl}`);

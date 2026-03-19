@@ -20,13 +20,14 @@ export function getDb(): Database.Database {
 function initSchema(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS submitted_streaks (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      round_id    TEXT    NOT NULL,
-      player      TEXT    NOT NULL,
-      day_index   INTEGER NOT NULL,
-      volume_wei  TEXT    NOT NULL,
-      tx_hash     TEXT,
-      submitted_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      round_id        TEXT    NOT NULL,
+      player          TEXT    NOT NULL,
+      day_index       INTEGER NOT NULL,
+      tx_count        INTEGER NOT NULL,
+      unique_to_count INTEGER NOT NULL,
+      tx_hash         TEXT,
+      submitted_at    INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
       UNIQUE(round_id, player, day_index)
     );
 
@@ -62,15 +63,16 @@ export function recordSubmission(
   roundId: string,
   player: string,
   dayIndex: number,
-  volumeWei: string,
+  txCount: number,
+  uniqueToCount: number,
   txHash: string
 ): void {
   const db = getDb();
   db.prepare(
     `INSERT OR IGNORE INTO submitted_streaks
-       (round_id, player, day_index, volume_wei, tx_hash)
-     VALUES (?, ?, ?, ?, ?)`
-  ).run(roundId, player.toLowerCase(), dayIndex, volumeWei, txHash);
+       (round_id, player, day_index, tx_count, unique_to_count, tx_hash)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).run(roundId, player.toLowerCase(), dayIndex, txCount, uniqueToCount, txHash);
 }
 
 export function startOracleRun(): number {
