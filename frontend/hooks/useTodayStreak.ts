@@ -31,7 +31,8 @@ export function useTodayStreak(
         todayDone: !!todayStreak,
         dailyStreaks: streaks.map((s) => ({
           dayIndex: parseInt(s.dayIndex),
-          volume: parseFloat(s.volume).toFixed(2),
+          txCount: parseInt(s.txCount),
+          uniqueToCount: parseInt(s.uniqueToCount),
           newStreak: parseInt(s.newStreak),
           timestamp: parseInt(s.timestamp),
         })),

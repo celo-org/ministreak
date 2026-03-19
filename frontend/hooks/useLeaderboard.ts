@@ -2,14 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchLeaderboard } from "@/lib/graphql";
-import { formatEther } from "viem";
+import { formatUnits } from "viem";
 
 export interface LeaderboardEntry {
   rank: number;
   address: string;
   streak: number;
-  volume: string;
-  volumeRaw: string;
+  txCount: number;
+  uniqueToCount: number;
   estimatedPrize: string;
 }
 
@@ -21,8 +21,8 @@ export function useLeaderboard(roundId: string | undefined) {
       const { round } = await fetchLeaderboard(roundId);
       if (!round) return null;
 
-      const pot = parseFloat(round.pot);
-      const distributable = pot * 0.95; // after 5% protocol fee
+      const potUsdt = parseFloat(formatUnits(BigInt(round.pot), 6));
+      const distributable = potUsdt * 0.95; // after 5% protocol fee
 
       const entries: LeaderboardEntry[] = round.playerRounds.map((pr, i) => {
         const rank = pr.rank ? parseInt(pr.rank) : i + 1;
@@ -35,8 +35,8 @@ export function useLeaderboard(roundId: string | undefined) {
           rank,
           address: pr.player.address || pr.player.id,
           streak: parseInt(pr.streak),
-          volume: parseFloat(pr.volume).toFixed(2),
-          volumeRaw: pr.volume,
+          txCount: parseInt(pr.txCount),
+          uniqueToCount: parseInt(pr.uniqueToCount),
           estimatedPrize: prize,
         };
       });

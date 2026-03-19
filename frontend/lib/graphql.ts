@@ -43,7 +43,8 @@ export interface GraphRound {
 export interface GraphPlayerRound {
   id: string;
   streak: string;
-  volume: string;
+  txCount: string;
+  uniqueToCount: string;
   rank: string | null;
   payout: string | null;
   player: {
@@ -54,7 +55,8 @@ export interface GraphPlayerRound {
 
 export interface GraphDailyStreak {
   dayIndex: string;
-  volume: string;
+  txCount: string;
+  uniqueToCount: string;
   newStreak: string;
   timestamp: string;
 }
@@ -67,7 +69,8 @@ export interface GraphPlayer {
   playerRounds: Array<{
     round: { id: string; roundId: string; status: string };
     streak: string;
-    volume: string;
+    txCount: string;
+    uniqueToCount: string;
     rank: string | null;
     payout: string | null;
   }>;
@@ -90,7 +93,8 @@ const LEADERBOARD_QUERY = `
       playerRounds(orderBy: streak, orderDirection: desc, first: 100) {
         id
         streak
-        volume
+        txCount
+        uniqueToCount
         rank
         payout
         player { id address }
@@ -131,7 +135,8 @@ const PLAYER_STATS_QUERY = `
       playerRounds(orderBy: round__roundId, orderDirection: desc, first: 10) {
         round { id roundId status }
         streak
-        volume
+        txCount
+        uniqueToCount
         rank
         payout
       }
@@ -144,7 +149,8 @@ const PLAYER_DAILY_STREAKS_QUERY = `
     playerRound(id: $playerRoundId) {
       dailyStreaks(orderBy: dayIndex, orderDirection: asc) {
         dayIndex
-        volume
+        txCount
+        uniqueToCount
         newStreak
         timestamp
       }
@@ -165,7 +171,8 @@ const CURRENT_ROUND_QUERY = `
       playerRounds(orderBy: streak, orderDirection: desc, first: 5) {
         id
         streak
-        volume
+        txCount
+        uniqueToCount
         player { id address }
       }
     }
@@ -210,7 +217,8 @@ export async function fetchCurrentRound(roundId: string) {
           playerRounds: Array<{
             id: string;
             streak: string;
-            volume: string;
+            txCount: string;
+            uniqueToCount: string;
             player: { id: string; address: string };
           }>;
         })

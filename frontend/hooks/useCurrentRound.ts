@@ -2,7 +2,7 @@
 
 import { useReadContract } from "wagmi";
 import { VAULT_ABI, VAULT_ADDRESS } from "@/lib/contracts";
-import { formatEther } from "viem";
+import { formatUnits } from "viem";
 
 export interface RoundData {
   roundId: bigint;
@@ -53,7 +53,7 @@ export function useCurrentRound() {
       startTime,
       endTime,
       pot,
-      potFormatted: parseFloat(formatEther(pot)).toFixed(2),
+      potFormatted: parseFloat(formatUnits(pot, 6)).toFixed(2),
       status,
       playerCount,
       daysRemaining,

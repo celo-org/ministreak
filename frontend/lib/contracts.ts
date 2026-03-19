@@ -19,8 +19,7 @@ export const CHARITY_ADDRESS =
   (process.env.NEXT_PUBLIC_CHARITY_ADDRESS as `0x${string}`) ||
   "0x4C6Aa14F58aFb01CB0515aD33e03Ec16a67f4E55";
 
-export const ENTRY_FEE = BigInt("1000000"); // 1 USDT (6 decimals)
-export const MIN_STREAK_VOLUME = BigInt("500000"); // 0.5 USDT (6 decimals)
+export const ENTRY_FEE = BigInt("500000"); // 0.50 USDT (6 decimals)
 
 // ─── ABIs ─────────────────────────────────────────────────────────────────────
 
@@ -75,9 +74,10 @@ export const VAULT_ABI = [
       { name: "player", type: "address" },
     ],
     outputs: [
-      { name: "streak", type: "uint256" },
-      { name: "volume", type: "uint256" },
-      { name: "lastValidDay", type: "uint256" },
+      { name: "streak", type: "uint8" },
+      { name: "txCount", type: "uint32" },
+      { name: "uniqueToCount", type: "uint16" },
+      { name: "lastValidDay", type: "uint8" },
       { name: "claimed", type: "bool" },
       { name: "entered", type: "bool" },
     ],
@@ -89,10 +89,48 @@ export const VAULT_ABI = [
     inputs: [{ name: "roundId", type: "uint256" }],
     outputs: [
       { name: "addresses", type: "address[]" },
-      { name: "streaks", type: "uint256[]" },
-      { name: "volumes", type: "uint256[]" },
+      { name: "streaks", type: "uint8[]" },
+      { name: "txCounts", type: "uint32[]" },
+      { name: "uniqueToCounts", type: "uint16[]" },
       { name: "ranks", type: "uint256[]" },
     ],
+  },
+  {
+    name: "recordStreak",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "player", type: "address" },
+      { name: "roundId", type: "uint256" },
+      { name: "dayIndex", type: "uint8" },
+      { name: "txCount", type: "uint32" },
+      { name: "uniqueToCount", type: "uint16" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "playerRecords",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "", type: "uint256" },
+      { name: "", type: "address" },
+    ],
+    outputs: [
+      { name: "streak", type: "uint8" },
+      { name: "lastValidDay", type: "uint8" },
+      { name: "txCount", type: "uint32" },
+      { name: "uniqueToCount", type: "uint16" },
+      { name: "claimed", type: "bool" },
+      { name: "entered", type: "bool" },
+    ],
+  },
+  {
+    name: "usdt",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
   },
   {
     name: "ENTRY_FEE",
@@ -102,6 +140,18 @@ export const VAULT_ABI = [
     outputs: [{ name: "", type: "uint256" }],
   },
   // Events
+  {
+    name: "StreakRecorded",
+    type: "event",
+    inputs: [
+      { name: "roundId", type: "uint256", indexed: true },
+      { name: "player", type: "address", indexed: true },
+      { name: "dayIndex", type: "uint8", indexed: false },
+      { name: "txCount", type: "uint32", indexed: false },
+      { name: "uniqueToCount", type: "uint16", indexed: false },
+      { name: "newStreak", type: "uint8", indexed: false },
+    ],
+  },
   {
     name: "PlayerEntered",
     type: "event",

@@ -2,13 +2,13 @@
 
 import { useReadContract } from "wagmi";
 import { VAULT_ABI, VAULT_ADDRESS } from "@/lib/contracts";
-import { formatEther, type Address } from "viem";
+import { type Address } from "viem";
 
 export interface PlayerStats {
-  streak: bigint;
-  volume: bigint;
-  volumeFormatted: string;
-  lastValidDay: bigint;
+  streak: number;
+  txCount: number;
+  uniqueToCount: number;
+  lastValidDay: number;
   claimed: boolean;
   entered: boolean;
 }
@@ -24,13 +24,13 @@ export function usePlayerStats(roundId: bigint | undefined, player: Address | un
 
   let stats: PlayerStats | undefined;
   if (data) {
-    const [streak, volume, lastValidDay, claimed, entered] = data as [
-      bigint, bigint, bigint, boolean, boolean
+    const [streak, txCount, uniqueToCount, lastValidDay, claimed, entered] = data as [
+      number, number, number, number, boolean, boolean
     ];
     stats = {
       streak,
-      volume,
-      volumeFormatted: parseFloat(formatEther(volume)).toFixed(2),
+      txCount,
+      uniqueToCount,
       lastValidDay,
       claimed,
       entered,
