@@ -31,7 +31,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const chainId = (await ethers.provider.getNetwork()).chainId;
 
-  console.log("\n=== Celo Grind Deployment ===");
+  console.log("\n=== MiniStreak Deployment ===");
   console.log(`Network:   ${network.name} (chainId: ${chainId})`);
   console.log(`Deployer:  ${deployer.address}`);
 
@@ -79,12 +79,12 @@ async function main() {
 
   // ─── 2. Deploy CeloGrindVault ─────────────────────────────────────────────
 
-  console.log("\n[2/4] Deploying CeloGrindVault...");
-  const VaultFactory = await ethers.getContractFactory("CeloGrindVault");
+  console.log("\n[2/4] Deploying MiniStreak...");
+  const VaultFactory = await ethers.getContractFactory("MiniStreak");
   const vault = await VaultFactory.deploy(usdtAddress, treasuryAddress);
   await vault.waitForDeployment();
   const vaultAddress = await vault.getAddress();
-  console.log(`      CeloGrindVault deployed at: ${vaultAddress}`);
+  console.log(`      MiniStreak deployed at: ${vaultAddress}`);
 
   // ─── 3. Deploy StreakOracle ───────────────────────────────────────────────
 

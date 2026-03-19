@@ -44,12 +44,12 @@ async function main() {
 
   // ── 2. Deploy CeloGrindVault ──────────────────────────────────────────────
 
-  console.log("\n[2/4] Deploying CeloGrindVault...");
-  const Vault = await ethers.getContractFactory("CeloGrindVault");
+  console.log("\n[2/4] Deploying MiniStreak...");
+  const Vault = await ethers.getContractFactory("MiniStreak");
   const vault = await Vault.deploy(usdtAddress, treasury.address);
   await vault.waitForDeployment();
   const vaultAddress = await vault.getAddress();
-  console.log(`      CeloGrindVault: ${vaultAddress}`);
+  console.log(`      MiniStreak: ${vaultAddress}`);
 
   // ── 3. Deploy StreakOracle ────────────────────────────────────────────────
 
@@ -105,7 +105,7 @@ NEXT_PUBLIC_GRAPH_API_URL=
   console.log(`  Carol          : ${carol.address}`);
   console.log("\nContracts:");
   console.log(`  MockUSDT       : ${usdtAddress}`);
-  console.log(`  CeloGrindVault : ${vaultAddress}`);
+  console.log(`  MiniStreak     : ${vaultAddress}`);
   console.log(`  StreakOracle   : ${oracleAddress}`);
   console.log("\nNext steps:");
   console.log("  1. Add localhost to MetaMask: http://127.0.0.1:8545, chainId 31337");

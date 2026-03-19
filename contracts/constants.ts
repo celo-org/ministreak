@@ -45,17 +45,17 @@ export const BLOCK_EXPLORERS: Record<number, string> = {
 
 export const DEPLOYED_ADDRESSES: Record<
   number,
-  { vault: `0x${string}`; oracle: `0x${string}`; usdt: `0x${string}` }
+  { miniStreak: `0x${string}`; oracle: `0x${string}`; usdt: `0x${string}` }
 > = {
   [CHAIN_IDS.CELO_SEPOLIA]: {
-    vault:  "0x0000000000000000000000000000000000000000", // TODO: fill after deploy:sepolia
-    oracle: "0x0000000000000000000000000000000000000000", // TODO: fill after deploy:sepolia
-    usdt:   "0x0000000000000000000000000000000000000000", // TODO: fill after deploy:sepolia (MockUSDT)
+    miniStreak: "0x0000000000000000000000000000000000000000", // TODO: fill after deploy:sepolia
+    oracle:     "0x0000000000000000000000000000000000000000", // TODO: fill after deploy:sepolia
+    usdt:       "0x0000000000000000000000000000000000000000", // TODO: fill after deploy:sepolia (MockUSDT)
   },
   [CHAIN_IDS.CELO_MAINNET]: {
-    vault:  "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
-    oracle: "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
-    usdt:   "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e", // TODO: verify mainnet USDT address
+    miniStreak: "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
+    oracle:     "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
+    usdt:       "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e", // TODO: verify mainnet USDT address
   },
 };
 
@@ -65,26 +65,26 @@ export const VAULT_ABI = [
   // State-changing
   "function enterRound(uint256 roundId) external",
   "function claimRefund(uint256 roundId) external",
-  "function recordStreak(address player, uint256 roundId, uint256 dayIndex, uint256 volume) external",
+  "function recordStreak(address player, uint256 roundId, uint8 dayIndex, uint32 txCount, uint16 uniqueToCount) external",
   "function resolveRound(uint256 roundId) external",
   "function setTreasury(address _treasury) external",
   "function pause() external",
   "function unpause() external",
   // Views
   "function getRoundPlayers(uint256 roundId) external view returns (address[])",
-  "function getPlayerStats(uint256 roundId, address player) external view returns (uint256 streak, uint256 volume, uint256 lastValidDay, bool claimed, bool entered)",
+  "function getPlayerStats(uint256 roundId, address player) external view returns (uint8 streak, uint32 txCount, uint16 uniqueToCount, uint8 lastValidDay, bool claimed, bool entered)",
   "function getCurrentRoundId() external view returns (uint256)",
   "function getRoundStatus(uint256 roundId) external view returns (uint8)",
-  "function getLeaderboard(uint256 roundId) external view returns (address[] addresses, uint256[] streaks, uint256[] volumes, uint256[] ranks)",
+  "function getLeaderboard(uint256 roundId) external view returns (address[] addresses, uint8[] streaks, uint32[] txCounts, uint16[] uniqueToCounts, uint256[] ranks)",
   "function rounds(uint256) external view returns (uint256 startTime, uint256 endTime, uint256 pot, uint8 status, uint256 playerCount)",
-  "function playerRecords(uint256 roundId, address player) external view returns (uint256 streak, uint256 volume, uint256 lastValidDay, bool claimed, bool entered)",
+  "function playerRecords(uint256 roundId, address player) external view returns (uint8 streak, uint8 lastValidDay, uint32 txCount, uint16 uniqueToCount, bool claimed, bool entered)",
   "function ENTRY_FEE() external view returns (uint256)",
   "function currentRoundId() external view returns (uint256)",
   "function treasury() external view returns (address)",
-  "function token() external view returns (address)",
+  "function usdt() external view returns (address)",
   // Events
   "event PlayerEntered(uint256 indexed roundId, address indexed player, uint256 pot)",
-  "event StreakRecorded(uint256 indexed roundId, address indexed player, uint256 dayIndex, uint256 volume, uint256 newStreak)",
+  "event StreakRecorded(uint256 indexed roundId, address indexed player, uint8 dayIndex, uint32 txCount, uint16 uniqueToCount, uint8 newStreak)",
   "event RoundResolved(uint256 indexed roundId, address indexed first, address indexed second, address third, uint256 pot, uint256 protocolFee)",
   "event RoundRefunded(uint256 indexed roundId, uint256 playerCount, uint256 potReturned)",
   "event RefundClaimed(uint256 indexed roundId, address indexed player, uint256 amount)",
@@ -93,17 +93,16 @@ export const VAULT_ABI = [
 
 export const ORACLE_ABI = [
   // State-changing
-  "function submitStreak(address player, uint256 roundId, uint256 dayIndex, uint256 volume) external",
-  "function batchSubmitStreaks(address[] calldata players, uint256[] calldata roundIds, uint256[] calldata dayIndexes, uint256[] calldata volumes) external",
+  "function submitStreak(address player, uint256 roundId, uint8 dayIndex, uint32 txCount, uint16 uniqueToCount) external",
+  "function batchSubmitStreaks(address[] calldata players, uint256[] calldata roundIds, uint8[] calldata dayIndexes, uint32[] calldata txCounts, uint16[] calldata uniqueToCounts) external",
   "function setTrustedSubmitter(address _submitter) external",
   "function setVault(address _vault) external",
   // Views
   "function isSubmitted(address player, uint256 roundId, uint256 dayIndex) external view returns (bool)",
   "function trustedSubmitter() external view returns (address)",
   "function vault() external view returns (address)",
-  "function MIN_VOLUME() external view returns (uint256)",
   // Events
-  "event StreakSubmitted(address indexed player, uint256 indexed roundId, uint256 dayIndex, uint256 volume)",
+  "event StreakSubmitted(address indexed player, uint256 indexed roundId, uint8 dayIndex, uint32 txCount, uint16 uniqueToCount)",
   "event SubmitterUpdated(address indexed oldSubmitter, address indexed newSubmitter)",
 ] as const;
 
@@ -120,8 +119,7 @@ export const ERC20_ABI = [
 // ─── Game Constants (mirrors Solidity) ───────────────────────────────────────
 
 export const GAME_CONSTANTS = {
-  ENTRY_FEE: 1_000_000n,          // 1 USDT (6 decimals)
-  MIN_STREAK_VOLUME: 500_000n,    // 0.50 USDT (6 decimals)
+  ENTRY_FEE: 500_000n,            // 0.5 USDT (6 decimals)
   PROTOCOL_FEE_BPS: 500n,         // 5%
   MIN_PLAYERS: 3,
   ROUND_DURATION_SECONDS: 7 * 24 * 60 * 60, // 7 days
