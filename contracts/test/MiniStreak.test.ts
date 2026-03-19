@@ -1,13 +1,14 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { CeloGrindVault, StreakOracle } from "../typechain-types";
+import { MiniStreak, StreakOracle } from "../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
 const ONE_USDT = ethers.parseUnits("1", 6);
 const HALF_USDT = ethers.parseUnits("0.5", 6);
+const ENTRY_FEE = ethers.parseUnits("0.5", 6);
 const SEVEN_DAYS = 7 * 24 * 60 * 60;
 
 // Minimal ERC20 mock
@@ -37,7 +38,7 @@ async function deployFixture() {
   }
 
   // Deploy Vault
-  const VaultFactory = await ethers.getContractFactory("CeloGrindVault");
+  const VaultFactory = await ethers.getContractFactory("MiniStreak");
   const vault = await VaultFactory.deploy(cusdAddress, treasury.address);
   const vaultAddress = await vault.getAddress();
 
@@ -59,7 +60,7 @@ async function deployFixture() {
     player: SignerWithAddress,
     roundId: bigint
   ) => {
-    await cusd.connect(player).approve(vaultAddress, ONE_USDT);
+    await cusd.connect(player).approve(vaultAddress, ENTRY_FEE);
     await vault.connect(player).enterRound(roundId);
   };
 
@@ -86,7 +87,7 @@ async function deployFixture() {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe("CeloGrindVault", () => {
+describe("MiniStreak", () => {
   // ── Deployment ──────────────────────────────────────────────────────────────
   describe("Deployment", () => {
     it("starts on round 1", async () => {
@@ -104,8 +105,8 @@ describe("CeloGrindVault", () => {
       expect(await vault.treasury()).to.equal(treasury.address);
     });
 
-    it("reverts if cUSD is zero address", async () => {
-      const VaultFactory = await ethers.getContractFactory("CeloGrindVault");
+    it("reverts if usdt is zero address", async () => {
+      const VaultFactory = await ethers.getContractFactory("MiniStreak");
       await expect(
         VaultFactory.deploy(ethers.ZeroAddress, ethers.ZeroAddress)
       ).to.be.revertedWithCustomError(
@@ -120,7 +121,7 @@ describe("CeloGrindVault", () => {
 
   // ── enterRound ──────────────────────────────────────────────────────────────
   describe("enterRound", () => {
-    it("accepts 1 cUSD and registers player", async () => {
+    it("accepts 0.5 USDT and registers player with txCount=1", async () => {
       const { vault, cusd, alice, vaultAddress, enterRound } =
         await loadFixture(deployFixture);
 
@@ -128,10 +129,12 @@ describe("CeloGrindVault", () => {
       await enterRound(alice, 1n);
       const balanceAfter = await cusd.balanceOf(alice.address);
 
-      expect(balanceBefore - balanceAfter).to.equal(ONE_USDT);
+      expect(balanceBefore - balanceAfter).to.equal(ENTRY_FEE);
 
-      const [, , , , entered] = await vault.getPlayerStats(1n, alice.address);
+      const [streak, txCount, uniqueToCount, lastValidDay, claimed, entered] =
+        await vault.getPlayerStats(1n, alice.address);
       expect(entered).to.be.true;
+      expect(txCount).to.equal(1);
     });
 
     it("updates round pot", async () => {
@@ -140,24 +143,24 @@ describe("CeloGrindVault", () => {
       await enterRound(bob, 1n);
 
       const round = await vault.rounds(1n);
-      expect(round.pot).to.equal(2n * ONE_USDT);
+      expect(round.pot).to.equal(2n * ENTRY_FEE);
     });
 
     it("emits PlayerEntered event", async () => {
       const { vault, cusd, alice, vaultAddress, enterRound } =
         await loadFixture(deployFixture);
 
-      await cusd.connect(alice).approve(vaultAddress, ONE_USDT);
+      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE);
       await expect(vault.connect(alice).enterRound(1n))
         .to.emit(vault, "PlayerEntered")
-        .withArgs(1n, alice.address, ONE_USDT);
+        .withArgs(1n, alice.address, ENTRY_FEE);
     });
 
     it("reverts on double entry", async () => {
       const { vault, cusd, alice, vaultAddress } =
         await loadFixture(deployFixture);
 
-      await cusd.connect(alice).approve(vaultAddress, ONE_USDT * 2n);
+      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE * 2n);
       await vault.connect(alice).enterRound(1n);
       await expect(
         vault.connect(alice).enterRound(1n)
@@ -168,7 +171,7 @@ describe("CeloGrindVault", () => {
       const { vault, cusd, alice, vaultAddress } =
         await loadFixture(deployFixture);
 
-      await cusd.connect(alice).approve(vaultAddress, ONE_USDT);
+      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE);
       await expect(
         vault.connect(alice).enterRound(99n)
       ).to.be.revertedWithCustomError(vault, "InvalidRoundId");
@@ -179,13 +182,13 @@ describe("CeloGrindVault", () => {
         await loadFixture(deployFixture);
 
       await time.increase(SEVEN_DAYS + 1);
-      await cusd.connect(alice).approve(vaultAddress, ONE_USDT);
+      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE);
       await expect(
         vault.connect(alice).enterRound(1n)
       ).to.be.revertedWithCustomError(vault, "RoundNotOpen");
     });
 
-    it("reverts without sufficient cUSD approval", async () => {
+    it("reverts without sufficient USDT approval", async () => {
       const { vault, alice } = await loadFixture(deployFixture);
       await expect(
         vault.connect(alice).enterRound(1n)
@@ -200,11 +203,12 @@ describe("CeloGrindVault", () => {
         await loadFixture(deployFixture);
 
       await enterRound(alice, 1n);
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0n, HALF_USDT);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0, 5, 3);
 
-      const [streak, volume] = await vault.getPlayerStats(1n, alice.address);
-      expect(streak).to.equal(1n);
-      expect(volume).to.equal(HALF_USDT);
+      const [streak, txCount, uniqueToCount] = await vault.getPlayerStats(1n, alice.address);
+      expect(streak).to.equal(1);
+      expect(txCount).to.equal(6); // 1 from entry + 5 from submitStreak
+      expect(uniqueToCount).to.equal(3);
     });
 
     it("extends streak on consecutive days", async () => {
@@ -213,12 +217,12 @@ describe("CeloGrindVault", () => {
 
       await enterRound(alice, 1n);
 
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0n, ONE_USDT);
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 1n, ONE_USDT);
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 2n, ONE_USDT);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0, 3, 2);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 1, 3, 2);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 2, 3, 2);
 
       const [streak] = await vault.getPlayerStats(1n, alice.address);
-      expect(streak).to.equal(3n);
+      expect(streak).to.equal(3);
     });
 
     it("resets streak on gap day", async () => {
@@ -227,27 +231,25 @@ describe("CeloGrindVault", () => {
 
       await enterRound(alice, 1n);
 
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0n, ONE_USDT);
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 1n, ONE_USDT);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0, 3, 2);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 1, 3, 2);
       // Gap: skip day 2
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 3n, ONE_USDT);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 3, 3, 2);
 
       const [streak] = await vault.getPlayerStats(1n, alice.address);
-      expect(streak).to.equal(1n); // reset to 1 after gap
+      expect(streak).to.equal(1); // reset to 1 after gap
     });
 
-    it("accumulates volume correctly", async () => {
+    it("accumulates txCount correctly", async () => {
       const { vault, oracle, oracleHotWallet, alice, enterRound } =
         await loadFixture(deployFixture);
 
       await enterRound(alice, 1n);
-      const vol1 = ethers.parseUnits("1.5", 6);
-      const vol2 = ethers.parseUnits("2.3", 6);
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0n, vol1);
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 1n, vol2);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0, 5, 3);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 1, 8, 4);
 
-      const [, volume] = await vault.getPlayerStats(1n, alice.address);
-      expect(volume).to.equal(vol1 + vol2);
+      const [, txCount] = await vault.getPlayerStats(1n, alice.address);
+      expect(txCount).to.equal(14); // 1 from entry + 5 + 8
     });
 
     it("emits StreakRecorded event", async () => {
@@ -256,10 +258,10 @@ describe("CeloGrindVault", () => {
 
       await enterRound(alice, 1n);
       await expect(
-        oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0n, HALF_USDT)
+        oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0, 5, 3)
       )
         .to.emit(vault, "StreakRecorded")
-        .withArgs(1n, alice.address, 0n, HALF_USDT, 1n);
+        .withArgs(1n, alice.address, 0, 5, 3, 1);
     });
 
     it("reverts on duplicate day submission", async () => {
@@ -267,22 +269,11 @@ describe("CeloGrindVault", () => {
         await loadFixture(deployFixture);
 
       await enterRound(alice, 1n);
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0n, HALF_USDT);
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0, 5, 3);
 
       await expect(
-        oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0n, HALF_USDT)
+        oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0, 5, 3)
       ).to.be.revertedWithCustomError(oracle, "AlreadySubmitted");
-    });
-
-    it("reverts when volume is below minimum", async () => {
-      const { oracle, oracleHotWallet, alice, enterRound } =
-        await loadFixture(deployFixture);
-
-      await enterRound(alice, 1n);
-      const tooLow = ethers.parseUnits("0.49", 6);
-      await expect(
-        oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0n, tooLow)
-      ).to.be.revertedWithCustomError(oracle, "VolumeTooLow");
     });
 
     it("reverts when player not registered", async () => {
@@ -290,7 +281,7 @@ describe("CeloGrindVault", () => {
         await loadFixture(deployFixture);
 
       await expect(
-        oracle.connect(oracleHotWallet).submitStreak(dave.address, 1n, 0n, HALF_USDT)
+        oracle.connect(oracleHotWallet).submitStreak(dave.address, 1n, 0, 5, 3)
       ).to.be.revertedWithCustomError(oracle, "PlayerNotRegistered");
     });
 
@@ -300,7 +291,7 @@ describe("CeloGrindVault", () => {
 
       await enterRound(alice, 1n);
       await expect(
-        oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 7n, HALF_USDT)
+        oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 7, 5, 3)
       ).to.be.revertedWithCustomError(oracle, "InvalidDayIndex");
     });
 
@@ -309,7 +300,7 @@ describe("CeloGrindVault", () => {
       await enterRound(alice, 1n);
 
       await expect(
-        vault.connect(bob).recordStreak(alice.address, 1n, 0n, HALF_USDT)
+        vault.connect(bob).recordStreak(alice.address, 1n, 0, 5, 3)
       ).to.be.reverted;
     });
   });
@@ -324,19 +315,19 @@ describe("CeloGrindVault", () => {
       await enterRound(bob, 1n);
       await enterRound(carol, 1n);
 
-      // Alice: 7-day streak, vol = 7 cUSD
+      // Alice: 7-day streak, txCount=10/day, uniqueToCount=5/day
       for (let d = 0; d < 7; d++) {
-        await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, BigInt(d), ONE_USDT);
+        await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, d, 10, 5);
       }
 
-      // Bob: 5-day streak, vol = 5 cUSD
+      // Bob: 5-day streak, txCount=5/day, uniqueToCount=3/day
       for (let d = 0; d < 5; d++) {
-        await oracle.connect(oracleHotWallet).submitStreak(bob.address, 1n, BigInt(d), ONE_USDT);
+        await oracle.connect(oracleHotWallet).submitStreak(bob.address, 1n, d, 5, 3);
       }
 
-      // Carol: 3-day streak, vol = 3 cUSD
+      // Carol: 3-day streak, txCount=3/day, uniqueToCount=2/day
       for (let d = 0; d < 3; d++) {
-        await oracle.connect(oracleHotWallet).submitStreak(carol.address, 1n, BigInt(d), ONE_USDT);
+        await oracle.connect(oracleHotWallet).submitStreak(carol.address, 1n, d, 3, 2);
       }
 
       await time.increase(SEVEN_DAYS + 1);
@@ -363,7 +354,7 @@ describe("CeloGrindVault", () => {
       const { vault, cusd, keeper, alice, bob, carol, treasury } =
         await threePlayerRound();
 
-      const pot = 3n * ONE_USDT;
+      const pot = 3n * ENTRY_FEE;
       const protocolFee = (pot * 500n) / 10000n; // 5%
       const distributable = pot - protocolFee;
 
@@ -426,8 +417,8 @@ describe("CeloGrindVault", () => {
   });
 
   // ── resolveRound — tiebreaker ─────────────────────────────────────────────
-  describe("resolveRound — tiebreaker by volume", () => {
-    it("breaks tie using cumulative volume", async () => {
+  describe("resolveRound — tiebreaker by txCount", () => {
+    it("breaks tie using txCount", async () => {
       const { vault, oracle, oracleHotWallet, keeper, alice, bob, carol, enterRound } =
         await loadFixture(deployFixture);
 
@@ -435,16 +426,16 @@ describe("CeloGrindVault", () => {
       await enterRound(bob, 1n);
       await enterRound(carol, 1n);
 
-      // Alice and Bob both have 5-day streaks, but Alice has higher volume
+      // Alice and Bob both have 5-day streaks, but Alice has higher txCount
       for (let d = 0; d < 5; d++) {
-        await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, BigInt(d), ethers.parseUnits("2", 6));
+        await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, d, 10, 5);
       }
       for (let d = 0; d < 5; d++) {
-        await oracle.connect(oracleHotWallet).submitStreak(bob.address, 1n, BigInt(d), ONE_USDT);
+        await oracle.connect(oracleHotWallet).submitStreak(bob.address, 1n, d, 5, 3);
       }
       // Carol: lower streak
       for (let d = 0; d < 3; d++) {
-        await oracle.connect(oracleHotWallet).submitStreak(carol.address, 1n, BigInt(d), ONE_USDT);
+        await oracle.connect(oracleHotWallet).submitStreak(carol.address, 1n, d, 3, 2);
       }
 
       await time.increase(SEVEN_DAYS + 1);
@@ -457,7 +448,41 @@ describe("CeloGrindVault", () => {
         .find((e: any) => e?.name === "RoundResolved");
 
       expect(event).to.not.be.null;
-      expect(event!.args.first).to.equal(alice.address);  // Alice wins tiebreak (10 > 5 cUSD vol)
+      expect(event!.args.first).to.equal(alice.address);  // Alice wins tiebreak (higher txCount)
+      expect(event!.args.second).to.equal(bob.address);
+      expect(event!.args.third).to.equal(carol.address);
+    });
+
+    it("breaks tie using uniqueToCount", async () => {
+      const { vault, oracle, oracleHotWallet, keeper, alice, bob, carol, enterRound } =
+        await loadFixture(deployFixture);
+
+      await enterRound(alice, 1n);
+      await enterRound(bob, 1n);
+      await enterRound(carol, 1n);
+
+      // Alice and Bob both have 5-day streaks, same txCount, but Alice has higher uniqueToCount
+      for (let d = 0; d < 5; d++) {
+        await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, d, 5, 8);
+      }
+      for (let d = 0; d < 5; d++) {
+        await oracle.connect(oracleHotWallet).submitStreak(bob.address, 1n, d, 5, 3);
+      }
+      // Carol: lower streak
+      for (let d = 0; d < 3; d++) {
+        await oracle.connect(oracleHotWallet).submitStreak(carol.address, 1n, d, 3, 2);
+      }
+
+      await time.increase(SEVEN_DAYS + 1);
+      const tx = await vault.connect(keeper).resolveRound(1n);
+      const receipt = await tx.wait();
+
+      const event = receipt!.logs
+        .map((log: any) => { try { return vault.interface.parseLog(log); } catch { return null; } })
+        .find((e: any) => e?.name === "RoundResolved");
+
+      expect(event).to.not.be.null;
+      expect(event!.args.first).to.equal(alice.address);  // Alice wins (higher uniqueToCount)
       expect(event!.args.second).to.equal(bob.address);
       expect(event!.args.third).to.equal(carol.address);
     });
@@ -487,8 +512,8 @@ describe("CeloGrindVault", () => {
       const aliceAfter = await cusd.balanceOf(alice.address);
       const bobAfter = await cusd.balanceOf(bob.address);
 
-      expect(aliceAfter - aliceBefore).to.equal(ONE_USDT);
-      expect(bobAfter - bobBefore).to.equal(ONE_USDT);
+      expect(aliceAfter - aliceBefore).to.equal(ENTRY_FEE);
+      expect(bobAfter - bobBefore).to.equal(ENTRY_FEE);
     });
 
     it("refunds when only 1 player entered", async () => {
@@ -571,24 +596,24 @@ describe("CeloGrindVault", () => {
 
       // Carol: 7 days, Alice: 5 days, Bob: 3 days
       for (let d = 0; d < 7; d++)
-        await oracle.connect(oracleHotWallet).submitStreak(carol.address, 1n, BigInt(d), ONE_USDT);
+        await oracle.connect(oracleHotWallet).submitStreak(carol.address, 1n, d, 5, 3);
       for (let d = 0; d < 5; d++)
-        await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, BigInt(d), ONE_USDT);
+        await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, d, 5, 3);
       for (let d = 0; d < 3; d++)
-        await oracle.connect(oracleHotWallet).submitStreak(bob.address, 1n, BigInt(d), ONE_USDT);
+        await oracle.connect(oracleHotWallet).submitStreak(bob.address, 1n, d, 5, 3);
 
-      const [addresses, streaks, , ranks] = await vault.getLeaderboard(1n);
+      const [addresses, streaks, , , ranks] = await vault.getLeaderboard(1n);
 
       expect(addresses[0]).to.equal(carol.address);
-      expect(streaks[0]).to.equal(7n);
+      expect(streaks[0]).to.equal(7);
       expect(ranks[0]).to.equal(1n);
 
       expect(addresses[1]).to.equal(alice.address);
-      expect(streaks[1]).to.equal(5n);
+      expect(streaks[1]).to.equal(5);
       expect(ranks[1]).to.equal(2n);
 
       expect(addresses[2]).to.equal(bob.address);
-      expect(streaks[2]).to.equal(3n);
+      expect(streaks[2]).to.equal(3);
       expect(ranks[2]).to.equal(3n);
     });
   });
@@ -613,14 +638,14 @@ describe("CeloGrindVault", () => {
         await loadFixture(deployFixture);
 
       await vault.connect(owner).pause();
-      await cusd.connect(alice).approve(vaultAddress, ONE_USDT);
+      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE);
       await expect(
         vault.connect(alice).enterRound(1n)
       ).to.be.revertedWithCustomError(vault, "EnforcedPause");
 
       await vault.connect(owner).unpause();
       await vault.connect(alice).enterRound(1n);
-      const [, , , , entered] = await vault.getPlayerStats(1n, alice.address);
+      const [, , , , , entered] = await vault.getPlayerStats(1n, alice.address);
       expect(entered).to.be.true;
     });
   });
@@ -638,17 +663,18 @@ describe("CeloGrindVault", () => {
       await oracle.connect(oracleHotWallet).batchSubmitStreaks(
         [alice.address, bob.address, carol.address],
         [1n, 1n, 1n],
-        [0n, 0n, 0n],
-        [ONE_USDT, ONE_USDT, ONE_USDT]
+        [0, 0, 0],
+        [5, 5, 5],
+        [3, 3, 3]
       );
 
       const [aliceStreak] = await vault.getPlayerStats(1n, alice.address);
       const [bobStreak] = await vault.getPlayerStats(1n, bob.address);
       const [carolStreak] = await vault.getPlayerStats(1n, carol.address);
 
-      expect(aliceStreak).to.equal(1n);
-      expect(bobStreak).to.equal(1n);
-      expect(carolStreak).to.equal(1n);
+      expect(aliceStreak).to.equal(1);
+      expect(bobStreak).to.equal(1);
+      expect(carolStreak).to.equal(1);
     });
 
     it("skips invalid entries in batch without reverting", async () => {
@@ -657,22 +683,23 @@ describe("CeloGrindVault", () => {
 
       await enterRound(alice, 1n);
 
-      // Mix valid and invalid (volume too low, unregistered player)
+      // First is valid, second is duplicate day (same player, same day)
       await oracle.connect(oracleHotWallet).batchSubmitStreaks(
-        [alice.address, alice.address], // second is a dup (same day)
+        [alice.address, alice.address],
         [1n, 1n],
-        [0n, 0n],
-        [ONE_USDT, ethers.parseUnits("0.1", 6)] // second has volume too low
+        [0, 0],
+        [5, 5],
+        [3, 3]
       );
 
       const [streak] = await vault.getPlayerStats(1n, alice.address);
-      expect(streak).to.equal(1n); // only one succeeded
+      expect(streak).to.equal(1); // only one succeeded
     });
 
     it("reverts if caller is not trusted submitter", async () => {
       const { oracle, alice } = await loadFixture(deployFixture);
       await expect(
-        oracle.connect(alice).batchSubmitStreaks([], [], [], [])
+        oracle.connect(alice).batchSubmitStreaks([], [], [], [], [])
       ).to.be.revertedWithCustomError(oracle, "Unauthorized");
     });
   });
@@ -699,9 +726,9 @@ describe("CeloGrindVault", () => {
     });
   });
 
-  // ── 2-winner payout ──────────────────────────────────────────────────────
+  // ── 2-with-streaks payout ────────────────────────────────────────────────
   describe("resolveRound — exactly 3 players, 2 with streaks", () => {
-    it("distributes 625/375 when only 2 have streaks", async () => {
+    it("distributes 50/30/20 with carol ranked 3rd (all players have txCount from entry)", async () => {
       const { vault, cusd, oracle, oracleHotWallet, keeper, alice, bob, carol, enterRound } =
         await loadFixture(deployFixture);
 
@@ -709,26 +736,30 @@ describe("CeloGrindVault", () => {
       await enterRound(bob, 1n);
       await enterRound(carol, 1n);
 
-      // Only alice and bob have streaks; carol has 0 streak
-      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0n, ONE_USDT);
-      await oracle.connect(oracleHotWallet).submitStreak(bob.address, 1n, 0n, HALF_USDT);
+      // Alice and Bob have streaks; Carol has no streak but still has txCount=1 from entry
+      // All 3 players are ranked (carol 3rd with streak=0, txCount=1)
+      await oracle.connect(oracleHotWallet).submitStreak(alice.address, 1n, 0, 10, 5);
+      await oracle.connect(oracleHotWallet).submitStreak(bob.address, 1n, 0, 5, 3);
 
-      const pot = 3n * ONE_USDT;
+      const pot = 3n * ENTRY_FEE;
       const fee = (pot * 500n) / 10000n;
       const dist = pot - fee;
 
       const aliceBefore = await cusd.balanceOf(alice.address);
       const bobBefore = await cusd.balanceOf(bob.address);
+      const carolBefore = await cusd.balanceOf(carol.address);
 
       await time.increase(SEVEN_DAYS + 1);
       await vault.connect(keeper).resolveRound(1n);
 
       const aliceAfter = await cusd.balanceOf(alice.address);
       const bobAfter = await cusd.balanceOf(bob.address);
+      const carolAfter = await cusd.balanceOf(carol.address);
 
-      // 1st: 62.5%, 2nd: 37.5%
-      expect(aliceAfter - aliceBefore).to.equal((dist * 625n) / 1000n);
-      expect(bobAfter - bobBefore).to.equal((dist * 375n) / 1000n);
+      // 3-way split: 50% / 30% / 20%
+      expect(aliceAfter - aliceBefore).to.equal((dist * 50n) / 100n);
+      expect(bobAfter - bobBefore).to.equal((dist * 30n) / 100n);
+      expect(carolAfter - carolBefore).to.equal((dist * 20n) / 100n);
     });
   });
 });
