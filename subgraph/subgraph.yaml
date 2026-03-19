@@ -4,11 +4,11 @@ schema:
 
 dataSources:
   - kind: ethereum/contract
-    name: CeloGrindVault
-    network: celo-alfajores  # switch to "celo" for mainnet
+    name: MiniStreak
+    network: celo-sepolia  # switch to "celo" for mainnet
     source:
       address: "0x0000000000000000000000000000000000000000"  # TODO: fill after deploy
-      abi: CeloGrindVault
+      abi: MiniStreak
       startBlock: 0  # TODO: fill with deployment block number
     mapping:
       kind: ethereum/events
@@ -20,14 +20,14 @@ dataSources:
         - PlayerRound
         - DailyStreak
       abis:
-        - name: CeloGrindVault
-          file: ./abis/CeloGrindVault.json
+        - name: MiniStreak
+          file: ./abis/MiniStreak.json
       eventHandlers:
         - event: RoundStarted(indexed uint256,uint256,uint256)
           handler: handleRoundStarted
         - event: PlayerEntered(indexed uint256,indexed address,uint256)
           handler: handlePlayerEntered
-        - event: StreakRecorded(indexed uint256,indexed address,uint256,uint256,uint256)
+        - event: StreakRecorded(indexed uint256,indexed address,uint8,uint32,uint16,uint8)
           handler: handleStreakRecorded
         - event: RoundResolved(indexed uint256,indexed address,indexed address,address,uint256,uint256)
           handler: handleRoundResolved

@@ -6,20 +6,20 @@ import {
   RoundResolved,
   RoundRefunded,
   RefundClaimed,
-} from "../generated/CeloGrindVault/CeloGrindVault";
+} from "../generated/MiniStreak/MiniStreak";
 import { Round, Player, PlayerRound, DailyStreak } from "../generated/schema";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const CUSD_DECIMALS = BigDecimal.fromString("1000000000000000000"); // 1e18
+const USDT_DECIMALS = BigDecimal.fromString("1000000"); // 1e6
 const ZERO_BD = BigDecimal.fromString("0");
 const ZERO_BI = BigInt.fromI32(0);
 const ONE_BI = BigInt.fromI32(1);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatCusd(raw: BigInt): BigDecimal {
-  return raw.toBigDecimal().div(CUSD_DECIMALS);
+function formatUsdt(raw: BigInt): BigDecimal {
+  return raw.toBigDecimal().div(USDT_DECIMALS);
 }
 
 function getOrCreatePlayer(address: Bytes, timestamp: BigInt): Player {
@@ -49,8 +49,8 @@ function getOrCreatePlayerRound(
     pr.player = playerAddress.toHexString().toLowerCase();
     pr.round = roundId.toString();
     pr.streak = ZERO_BI;
-    pr.volume = ZERO_BD;
-    pr.volumeRaw = ZERO_BI;
+    pr.txCount = 0;
+    pr.uniqueToCount = 0;
     pr.rank = null;
     pr.payout = null;
     pr.payoutRaw = null;
@@ -88,7 +88,7 @@ export function handlePlayerEntered(event: PlayerEntered): void {
   // Update round
   const roundEntity = Round.load(roundId.toString());
   if (!roundEntity) return;
-  roundEntity.pot = formatCusd(newPot);
+  roundEntity.pot = formatUsdt(newPot);
   roundEntity.potRaw = newPot;
   roundEntity.playerCount = roundEntity.playerCount.plus(ONE_BI);
   roundEntity.save();
@@ -100,6 +100,8 @@ export function handlePlayerEntered(event: PlayerEntered): void {
 
   // Create player-round record
   const pr = getOrCreatePlayerRound(roundId, playerAddress);
+  pr.txCount = 1; // entry counts as first tx
+  pr.uniqueToCount = 0;
   pr.save();
 }
 
@@ -107,21 +109,23 @@ export function handleStreakRecorded(event: StreakRecorded): void {
   const roundId = event.params.roundId;
   const playerAddress = event.params.player;
   const dayIndex = event.params.dayIndex;
-  const volume = event.params.volume;
+  const txCount = event.params.txCount;
+  const uniqueToCount = event.params.uniqueToCount;
   const newStreak = event.params.newStreak;
 
   // Update PlayerRound
   const pr = getOrCreatePlayerRound(roundId, playerAddress);
-  pr.streak = newStreak;
-  pr.volumeRaw = pr.volumeRaw.plus(volume);
-  pr.volume = formatCusd(pr.volumeRaw);
+  pr.streak = BigInt.fromI32(newStreak);
+  pr.txCount = pr.txCount + txCount;
+  pr.uniqueToCount = pr.uniqueToCount + uniqueToCount;
   pr.save();
 
   // Update Player best streak
   const player = Player.load(playerAddress.toHexString().toLowerCase());
   if (player) {
-    if (newStreak.gt(player.bestStreak)) {
-      player.bestStreak = newStreak;
+    const newStreakBI = BigInt.fromI32(newStreak);
+    if (newStreakBI.gt(player.bestStreak)) {
+      player.bestStreak = newStreakBI;
       player.save();
     }
   }
@@ -138,10 +142,10 @@ export function handleStreakRecorded(event: StreakRecorded): void {
   ds.player = playerAddress.toHexString().toLowerCase();
   ds.round = roundId.toString();
   ds.playerRound = pr.id;
-  ds.dayIndex = dayIndex;
-  ds.volumeRaw = volume;
-  ds.volume = formatCusd(volume);
-  ds.newStreak = newStreak;
+  ds.dayIndex = BigInt.fromI32(dayIndex);
+  ds.txCount = txCount;
+  ds.uniqueToCount = uniqueToCount;
+  ds.newStreak = BigInt.fromI32(newStreak);
   ds.timestamp = event.block.timestamp;
   ds.txHash = event.transaction.hash;
   ds.save();
@@ -178,13 +182,13 @@ export function handleRoundResolved(event: RoundResolved): void {
     const pr = getOrCreatePlayerRound(roundId, winnerAddress);
     pr.rank = rank;
     pr.payoutRaw = payoutRaw;
-    pr.payout = formatCusd(payoutRaw);
+    pr.payout = formatUsdt(payoutRaw);
     pr.save();
 
     const player = Player.load(winnerAddress.toHexString().toLowerCase());
     if (player) {
       player.totalWinningsRaw = player.totalWinningsRaw.plus(payoutRaw);
-      player.totalWinnings = formatCusd(player.totalWinningsRaw);
+      player.totalWinnings = formatUsdt(player.totalWinningsRaw);
       player.save();
     }
   }

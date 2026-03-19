@@ -46,8 +46,8 @@ type PlayerRound @entity {
   player: Player!
   round: Round!
   streak: BigInt!                 # current/final streak count
-  volume: BigDecimal!             # cumulative qualifying cUSD volume
-  volumeRaw: BigInt!
+  txCount: Int!
+  uniqueToCount: Int!
   rank: BigInt                    # null until round resolved
   payout: BigDecimal              # null until round resolved
   payoutRaw: BigInt
@@ -63,8 +63,8 @@ type DailyStreak @entity {
   round: Round!
   playerRound: PlayerRound!
   dayIndex: BigInt!               # 0 = first day, 6 = last day
-  volume: BigDecimal!             # qualifying cUSD volume for this day
-  volumeRaw: BigInt!
+  txCount: Int!
+  uniqueToCount: Int!
   newStreak: BigInt!              # streak count after this day
   timestamp: BigInt!
   txHash: Bytes!
