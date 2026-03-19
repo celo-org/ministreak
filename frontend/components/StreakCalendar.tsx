@@ -2,7 +2,7 @@
 
 interface DayEntry {
   dayIndex: number;
-  volume: string;
+  txCount: number;
   newStreak: number;
   timestamp: number;
 }
@@ -51,7 +51,7 @@ export default function StreakCalendar({ dailyStreaks, isLoading }: StreakCalend
               <span className="text-xs text-gray-500">{label}</span>
               {isCompleted && (
                 <span className="text-xs text-celo-green font-medium">
-                  ${streak.volume}
+                  {streak.txCount} txs
                 </span>
               )}
             </div>

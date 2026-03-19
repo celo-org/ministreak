@@ -88,7 +88,7 @@ export default function LeaderboardPage() {
         i > 0 && arr[i - 1].streak === e.streak
       )) && (
         <div className="card text-xs text-gray-400 text-center">
-          Ties broken by cumulative USDT volume. Higher volume wins.
+          Ranked by streak, then tx count, then unique addresses.
         </div>
       )}
 

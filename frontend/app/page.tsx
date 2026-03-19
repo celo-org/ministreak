@@ -145,23 +145,27 @@ export default function HomePage() {
         {howToOpen && (
           <div className="mt-3 space-y-2 text-sm text-gray-400">
             <p>
-              1. Pay <strong className="text-white">1 USDT</strong> to enter each
-              week&apos;s round before Monday 00:00 UTC.
+              1. Pay <strong className="text-white">0.5 USDT</strong> to enter each
+              week&apos;s round (Mon 00:00 — Sun 23:59 UTC).
             </p>
             <p>
-              2. Make at least <strong className="text-white">1 on-chain tx of 0.50+ USDT</strong>{" "}
+              2. Send <strong className="text-white">any outgoing transaction</strong>{" "}
               every day to build your streak.
             </p>
             <p>
-              3. The player with the <strong className="text-white">longest consecutive streak</strong>{" "}
-              wins on Sunday 23:59 UTC.
+              3. Ranking: <strong className="text-white">longest streak</strong>,
+              then <strong className="text-white">tx count</strong>,
+              then <strong className="text-white">unique addresses</strong>.
             </p>
             <p>
-              4. Winners split the pot:{" "}
+              4. Miss a day? <strong className="text-white">You&apos;re out</strong> — streak resets to zero.
+            </p>
+            <p>
+              5. Winners split the pot:{" "}
               <strong className="text-white">50% / 30% / 20%</strong> (minus 5% fee).
             </p>
             <p>
-              5. Fewer than 3 players? All entry fees are refunded.
+              6. Fewer than 3 players? All entry fees are refunded.
             </p>
           </div>
         )}

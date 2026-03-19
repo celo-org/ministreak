@@ -68,7 +68,7 @@ export default function EntryButton({
       ? "Approving USDT..."
       : step === "entering"
       ? "Entering Round..."
-      : "Enter This Week — 1 USDT";
+      : "Enter This Week — 0.5 USDT";
 
   return (
     <button

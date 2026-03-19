@@ -55,7 +55,7 @@ export default function StreakCard({
 
       {!todayDone && streak > 0 && (
         <div className="mt-3 p-2 bg-red-900/30 border border-red-800 rounded-xl text-xs text-red-300">
-          Make a qualifying tx today to keep your streak alive!
+          Send a tx today to keep your streak alive!
         </div>
       )}
     </div>

@@ -53,9 +53,10 @@ export default function Leaderboard({
       {/* Header */}
       <div className="grid grid-cols-12 text-xs text-gray-500 px-3 pb-1">
         <span className="col-span-1">#</span>
-        <span className="col-span-5">Wallet</span>
+        <span className="col-span-4">Wallet</span>
         <span className="col-span-2 text-center">Streak</span>
-        <span className="col-span-2 text-center">Vol.</span>
+        <span className="col-span-1 text-center">Txs</span>
+        <span className="col-span-2 text-center">Uniq</span>
         {showPrizes && <span className="col-span-2 text-right">Prize</span>}
       </div>
 
@@ -67,7 +68,8 @@ export default function Leaderboard({
         const isTied =
           prevEntry &&
           prevEntry.streak === entry.streak &&
-          prevEntry.rank === entry.rank;
+          prevEntry.txCount === entry.txCount &&
+          prevEntry.uniqueToCount === entry.uniqueToCount;
 
         return (
           <div
@@ -80,7 +82,7 @@ export default function Leaderboard({
           >
             <span className="col-span-1 text-lg">{rankBadge(entry.rank)}</span>
 
-            <div className="col-span-5">
+            <div className="col-span-4">
               <p className={`text-sm font-mono ${isMe ? "text-celo-green font-bold" : "text-gray-200"}`}>
                 {truncateAddress(entry.address)}
                 {isMe && <span className="ml-1 text-xs">(you)</span>}
@@ -104,8 +106,12 @@ export default function Leaderboard({
               )}
             </div>
 
+            <div className="col-span-1 text-center">
+              <span className="text-xs text-gray-400">{entry.txCount}</span>
+            </div>
+
             <div className="col-span-2 text-center">
-              <span className="text-xs text-gray-400">{entry.volume}</span>
+              <span className="text-xs text-gray-400">{entry.uniqueToCount}</span>
             </div>
 
             {showPrizes && (

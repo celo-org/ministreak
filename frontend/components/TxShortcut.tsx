@@ -1,29 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useWalletClient, usePublicClient } from "wagmi";
-import { USDT_ADDRESS, ERC20_ABI, CHARITY_ADDRESS, MIN_STREAK_VOLUME } from "@/lib/contracts";
+import { useWalletClient, usePublicClient, useAccount } from "wagmi";
+import { parseEther } from "viem";
 
 export default function TxShortcut({ onSuccess }: { onSuccess?: () => void }) {
+  const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
   const [step, setStep] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [error, setError] = useState("");
   const [txHash, setTxHash] = useState("");
-  const [showDisclaimer, setShowDisclaimer] = useState(true);
 
-  async function sendQualifyingTx() {
-    if (!walletClient || !publicClient) return;
+  async function sendQuickTx() {
+    if (!walletClient || !publicClient || !address) return;
     setStep("sending");
     setError("");
 
     try {
-      // Transfer 0.50 USDT to the Celo charity address
-      const hash = await walletClient.writeContract({
-        address: USDT_ADDRESS,
-        abi: ERC20_ABI,
-        functionName: "transfer",
-        args: [CHARITY_ADDRESS, MIN_STREAK_VOLUME],
+      // Send a minimal CELO transfer to self — any outgoing tx counts
+      const hash = await walletClient.sendTransaction({
+        to: address,
+        value: parseEther("0.001"),
         gasPrice: BigInt(5_000_000_000),
       });
 
@@ -41,10 +39,10 @@ export default function TxShortcut({ onSuccess }: { onSuccess?: () => void }) {
     return (
       <div className="card border-celo-green/40 border">
         <div className="flex items-center gap-2 text-celo-green font-bold mb-1">
-          <span>✓</span> Qualifying tx sent!
+          <span>✓</span> Quick tx sent!
         </div>
         <p className="text-xs text-gray-400">
-          0.50 USDT donated to Celo charity. The oracle will record your streak shortly.
+          Your transaction has been recorded. The oracle will update your streak shortly.
         </p>
         {txHash && (
           <p className="text-xs text-gray-600 mt-1 truncate">Tx: {txHash}</p>
@@ -55,26 +53,13 @@ export default function TxShortcut({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <div className="card space-y-3">
-      <h3 className="font-bold text-sm">Quick Qualifying Tx</h3>
+      <h3 className="font-bold text-sm">Quick Streak Tx</h3>
 
-      {showDisclaimer && (
-        <div className="p-2 bg-yellow-900/30 border border-yellow-800 rounded-xl text-xs text-yellow-200 space-y-1">
-          <p className="font-semibold">Disclaimer</p>
-          <p>
-            This sends <strong>0.50 USDT</strong> to the{" "}
-            <strong>Celo Community Fund</strong> (a legitimate Celo charity
-            address). This is a real transfer — the funds are donated.
-            This is a voluntary shortcut to ensure your daily streak is
-            recorded.
-          </p>
-          <button
-            onClick={() => setShowDisclaimer(false)}
-            className="text-yellow-400 underline"
-          >
-            I understand, close this
-          </button>
-        </div>
-      )}
+      <p className="text-xs text-gray-400">
+        Any outgoing transaction counts toward your daily streak. This sends a
+        tiny amount of CELO (0.001) to yourself as a quick way to keep your
+        streak alive.
+      </p>
 
       {step === "error" && (
         <p className="text-xs text-red-400">{error}</p>
@@ -82,14 +67,14 @@ export default function TxShortcut({ onSuccess }: { onSuccess?: () => void }) {
 
       <button
         className="btn-primary"
-        onClick={sendQualifyingTx}
+        onClick={sendQuickTx}
         disabled={step === "sending"}
       >
-        {step === "sending" ? "Sending 0.50 USDT..." : "Send Today's Qualifying Tx (0.50 USDT)"}
+        {step === "sending" ? "Sending..." : "Send Quick Tx (0.001 CELO)"}
       </button>
 
       <p className="text-xs text-gray-500 text-center">
-        Sends 0.50 USDT to Celo Community Fund to satisfy streak requirements
+        Sends 0.001 CELO to yourself — any outgoing tx counts
       </p>
     </div>
   );
