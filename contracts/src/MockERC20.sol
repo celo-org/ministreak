@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 /**
  * @title MockERC20
  * @notice Test-only ERC20 token with public mint function.
- *         Simulates cUSD for local Hardhat tests.
+ *         Simulates USDT for local Hardhat tests.
  */
 contract MockERC20 is ERC20 {
     uint8 private _decimals;

@@ -1,0 +1,13 @@
+{
+  "network": "celoSepolia",
+  "chainId": "11142220",
+  "deployedAt": "2026-03-19T14:26:11.640Z",
+  "deployer": "0x36Ae50E825c2fBEb7c4Dea7bDDf2A4Bc5cf5617B",
+  "treasury": "0x36Ae50E825c2fBEb7c4Dea7bDDf2A4Bc5cf5617B",
+  "oracleHotWallet": "0x36Ae50E825c2fBEb7c4Dea7bDDf2A4Bc5cf5617B",
+  "contracts": {
+    "vault": "0x911BD7790a581831BbE544bC782cc78659ce41b8",
+    "oracle": "0x6827D8155eF79a7f2d8eA87f8E64b04b3E6936D7",
+    "usdt": "0xd077A400968890Eacc75cdc901F0356c943e4fDb"
+  }
+}

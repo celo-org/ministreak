@@ -1,6 +1,6 @@
 /**
  * setup-chainlink.ts
- * Registers the CeloGrindVault.resolveRound() function with Chainlink Automation.
+ * Registers the MiniStreak.resolveRound() function with Chainlink Automation.
  *
  * Usage:
  *   npx hardhat run scripts/setup-chainlink.ts --network alfajores
@@ -117,7 +117,7 @@ async function main() {
   // Register upkeep
   // Note: exact ABI varies by registry version — adjust if needed
   const registerParams = {
-    name: "CeloGrind Weekly Round Resolution",
+    name: "MiniStreak Weekly Round Resolution",
     encryptedEmail: "0x",
     upkeepContract: vaultAddress,
     gasLimit: 500_000,

@@ -39,7 +39,7 @@ export default function HomePage() {
       <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-2xl font-black text-white">
-            Celo Grind
+            MiniStreak
           </h1>
           <p className="text-xs text-gray-500">Weekly Streak Leaderboard</p>
         </div>
@@ -97,8 +97,7 @@ export default function HomePage() {
           <div className="card text-center space-y-2">
             <p className="text-red-400 text-sm font-semibold">Contract unreachable</p>
             <p className="text-gray-500 text-xs">
-              Make sure the Hardhat node is running on port 8545, then run{" "}
-              <code className="text-gray-300">npm run deploy:local</code> in the contracts folder and restart the frontend.
+              Make sure you&apos;re connected to Celo Sepolia testnet and the contract is deployed.
             </p>
           </div>
         ) : (

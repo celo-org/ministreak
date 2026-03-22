@@ -1,7 +1,7 @@
 # Celo Grind — Weekly Transaction Streak Leaderboard
 
 A MiniPay Mini App that runs weekly on-chain transaction streak competitions on Celo.
-Players pay 1 USDT to enter, maintain daily qualifying transactions to build streaks,
+Players pay 0.5 USDT to enter, maintain daily qualifying transactions to build streaks,
 and the longest streak at week's end wins the USDT pot.
 
 **Game currency:** USDT (MockUSDT on testnets, real USDT on mainnet)
@@ -27,7 +27,7 @@ and the longest streak at week's end wins the USDT pot.
          │ contract reads/writes         │ GraphQL queries
          ▼                              ▼
 ┌────────────────────┐      ┌──────────────────────────┐
-│  CeloGrindVault    │      │  The Graph Subgraph       │
+│  MiniStreak        │      │  The Graph Subgraph       │
 │  StreakOracle      │      │  (PlayerEntered,          │
 │  (Celo Sepolia)    │      │   StreakRecorded, etc.)   │
 └────────┬───────────┘      └──────────────────────────┘
@@ -44,7 +44,7 @@ and the longest streak at week's end wins the USDT pot.
          │ Chainlink Automation (weekly, Sunday 23:59 UTC)
          ▼
 ┌──────────────────────────────────┐
-│  CeloGrindVault.resolveRound()  │
+│  MiniStreak.resolveRound()      │
 │  — compute rankings             │
 │  — distribute USDT prizes       │
 │  — start next round             │
@@ -59,11 +59,11 @@ and the longest streak at week's end wins the USDT pot.
 celo-grind/
 ├── contracts/            # Hardhat + Solidity smart contracts
 │   ├── src/
-│   │   ├── CeloGrindVault.sol    # Main game vault
+│   │   ├── MiniStreak.sol    # Main game vault
 │   │   ├── StreakOracle.sol      # Off-chain data bridge
 │   │   └── MockERC20.sol         # Test-only ERC20 (local + testnet)
 │   ├── test/
-│   │   └── CeloGrindVault.test.ts  # 48 tests
+│   │   └── MiniStreak.test.ts  # 48 tests
 │   ├── scripts/
 │   │   ├── deploy-local.ts       # Local Hardhat node deploy + env setup
 │   │   ├── deploy.ts             # Deploy to Celo Sepolia / Mainnet
@@ -146,7 +146,7 @@ cd contracts && npm run node
 cd contracts && npm run deploy:local
 ```
 
-This deploys MockUSDT + CeloGrindVault + StreakOracle, mints 10,000 USDT to
+This deploys MockUSDT + MiniStreak + StreakOracle, mints 10,000 USDT to
 the first 5 test accounts, and **auto-writes `frontend/.env.local`**.
 
 > Every time you restart the Hardhat node, re-run `deploy:local` to get fresh addresses.
@@ -181,7 +181,7 @@ cd contracts && npx hardhat console --network localhost
 ```
 
 ```js
-const vault = await ethers.getContractAt("CeloGrindVault", "0xYOUR_VAULT_ADDR")
+const vault = await ethers.getContractAt("MiniStreak", "0xYOUR_VAULT_ADDR")
 const roundId = await vault.getCurrentRoundId()
 await vault.resolveRound(roundId)  // deployer has KEEPER_ROLE
 ```
@@ -224,7 +224,7 @@ npm run deploy:sepolia
 
 The script:
 1. Uses the official USDT on Celo Sepolia: `0xd077A400968890Eacc75cdc901F0356c943e4fDb` (6 decimals)
-2. Deploys `CeloGrindVault` (with real USDT as game token)
+2. Deploys `MiniStreak` (with real USDT as game token)
 3. Deploys `StreakOracle`
 4. Grants `ORACLE_ROLE` to StreakOracle
 5. Saves deployment info to `contracts/deployments/celoSepolia.json`
@@ -338,14 +338,14 @@ Update `NEXT_PUBLIC_GRAPH_API_URL` in your frontend env once deployed.
 
 ## Smart Contract Addresses
 
-| Contract         | Network       | Address                                                   |
-|------------------|---------------|-----------------------------------------------------------|
-| CeloGrindVault   | Celo Sepolia  | *Fill after `deploy:sepolia`*                             |
-| StreakOracle     | Celo Sepolia  | *Fill after `deploy:sepolia`*                             |
-| USDT             | Celo Sepolia  | `0xd077A400968890Eacc75cdc901F0356c943e4fDb` (6 decimals) |
-| CeloGrindVault   | Mainnet       | *After audit + mainnet deploy*                            |
-| StreakOracle     | Mainnet       | *After audit + mainnet deploy*                            |
-| USDT             | Mainnet       | Verify official address before use                        |
+| Contract         | Network       | Address                                      |
+|------------------|---------------|----------------------------------------------|
+| MiniStreak       | Celo Sepolia  | `0x911BD7790a581831BbE544bC782cc78659ce41b8`  |
+| StreakOracle     | Celo Sepolia  | `0x6827D8155eF79a7f2d8eA87f8E64b04b3E6936D7`  |
+| USDT             | Celo Sepolia  | `0xd077A400968890Eacc75cdc901F0356c943e4fDb`  |
+| MiniStreak       | Mainnet       | *After audit + mainnet deploy*                |
+| StreakOracle     | Mainnet       | *After audit + mainnet deploy*                |
+| USDT             | Mainnet       | Verify official address before use            |
 
 ---
 
@@ -353,7 +353,7 @@ Update `NEXT_PUBLIC_GRAPH_API_URL` in your frontend env once deployed.
 
 | Rule             | Value                                   |
 |------------------|-----------------------------------------|
-| Entry fee        | 1 USDT                                  |
+| Entry fee        | 0.5 USDT                                |
 | Min streak tx    | 0.50 USDT (sent or received, no self)   |
 | Round duration   | 7 days (Mon 00:00 — Sun 23:59 UTC)      |
 | Protocol fee     | 5%                                      |
@@ -386,6 +386,64 @@ Update `NEXT_PUBLIC_GRAPH_API_URL` in your frontend env once deployed.
 - Mobile-first, Tailwind CSS only, no external component libraries
 
 To submit for MiniPay listing: [minipay.to/mini-apps](https://minipay.to/mini-apps)
+
+---
+
+## Environment Variables Reference
+
+### contracts/.env
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DEPLOYER_PRIVATE_KEY` | Yes | Wallet private key with 0x prefix. Must have CELO for gas. |
+| `TREASURY_ADDRESS` | No | Receives 5% protocol fee. Defaults to deployer. |
+| `ORACLE_HOT_WALLET` | No | Oracle submitter address. Defaults to deployer. |
+| `CELO_SEPOLIA_RPC_URL` | No | Defaults to `https://forno.celo-sepolia.celo-testnet.org` |
+| `USDT_ADDRESS` | No | Override USDT address. Auto-resolved per chain. |
+| `BLOCKSCOUT_API_KEY` | No | Placeholder is fine for Celo Sepolia Blockscout. |
+
+### frontend/.env.local
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NEXT_PUBLIC_CHAIN_ID` | Yes | `11142220` (Celo Sepolia) or `42220` (Mainnet) |
+| `NEXT_PUBLIC_CELO_RPC_URL` | No | RPC endpoint. Defaults per chain. |
+| `NEXT_PUBLIC_VAULT_ADDRESS` | Yes | MiniStreak contract address |
+| `NEXT_PUBLIC_ORACLE_ADDRESS` | Yes | StreakOracle contract address |
+| `NEXT_PUBLIC_USDT_ADDRESS` | Yes | USDT token address |
+| `NEXT_PUBLIC_GRAPH_API_URL` | No | The Graph subgraph endpoint. Leave empty for contract-only mode. |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | No | WalletConnect project ID for non-MiniPay browsers. |
+| `NEXT_PUBLIC_CHARITY_ADDRESS` | No | Destination for TxShortcut streak transactions. |
+
+### oracle-service/.env
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ORACLE_PRIVATE_KEY` | Yes | Hot wallet private key (0x prefix). Must have CELO for gas. |
+| `CELO_RPC_URL` | No | Defaults to Celo Sepolia RPC. |
+| `VAULT_ADDRESS` | Yes | MiniStreak contract address. |
+| `ORACLE_ADDRESS` | Yes | StreakOracle contract address. |
+| `DB_PATH` | No | SQLite database path. Default `./oracle.db`. |
+| `CRON_SCHEDULE` | No | Oracle run schedule. Default `0 * * * *` (hourly). |
+| `LOG_LEVEL` | No | `debug`, `info`, `warn`, or `error`. Default `info`. |
+| `WEBHOOK_ALERT_URL` | No | Slack/Discord webhook for low-balance alerts. |
+| `MIN_CELO_BALANCE` | No | Alert threshold in CELO. Default `0.1`. |
+
+---
+
+## Testing on MiniPay (Dev Mode)
+
+1. Install MiniPay on your Android device (available on Google Play via Opera MiniPay)
+2. Enable **Developer Mode** in MiniPay settings
+3. In the dev tools, add your Vercel URL as a test dApp
+4. MiniPay auto-connects via `window.ethereum` — no wallet connection needed
+5. Ensure the frontend is deployed with `NEXT_PUBLIC_CHAIN_ID=11142220` (Celo Sepolia)
+6. Get testnet USDT from the faucet or have someone transfer USDT on Celo Sepolia
+
+**MiniPay-specific behaviors:**
+- Wallet connect/disconnect buttons are hidden (wallet is implicit)
+- All transactions use legacy tx mode (`gasPrice`, no EIP-1559)
+- UI is mobile-only (`max-w-md`, fixed bottom navigation)
 
 ---
 

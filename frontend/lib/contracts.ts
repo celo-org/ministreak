@@ -3,20 +3,24 @@
  * Typed contract definitions for wagmi hooks.
  */
 
+function getEnv(key: string): string {
+  return (process.env[key] || "").trim();
+}
+
 export const VAULT_ADDRESS =
-  (process.env.NEXT_PUBLIC_VAULT_ADDRESS as `0x${string}`) ||
+  (getEnv("NEXT_PUBLIC_VAULT_ADDRESS") as `0x${string}`) ||
   "0x0000000000000000000000000000000000000000";
 
 export const ORACLE_ADDRESS =
-  (process.env.NEXT_PUBLIC_ORACLE_ADDRESS as `0x${string}`) ||
+  (getEnv("NEXT_PUBLIC_ORACLE_ADDRESS") as `0x${string}`) ||
   "0x0000000000000000000000000000000000000000";
 
 export const USDT_ADDRESS =
-  (process.env.NEXT_PUBLIC_USDT_ADDRESS as `0x${string}`) ||
+  (getEnv("NEXT_PUBLIC_USDT_ADDRESS") as `0x${string}`) ||
   "0x0000000000000000000000000000000000000000";
 
 export const CHARITY_ADDRESS =
-  (process.env.NEXT_PUBLIC_CHARITY_ADDRESS as `0x${string}`) ||
+  (getEnv("NEXT_PUBLIC_CHARITY_ADDRESS") as `0x${string}`) ||
   "0x4C6Aa14F58aFb01CB0515aD33e03Ec16a67f4E55";
 
 export const ENTRY_FEE = BigInt("500000"); // 0.50 USDT (6 decimals)

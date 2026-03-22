@@ -124,26 +124,25 @@ export async function submitStreak(qualifying: QualifyingTx): Promise<string> {
     args: [
       qualifying.player,
       qualifying.roundId,
-      BigInt(qualifying.dayIndex),
+      qualifying.dayIndex,
       qualifying.txCount,
       qualifying.uniqueToCount,
-    ],
+    ] as any,
     account: walletClient.account!,
   });
 
-  const hash = await walletClient.writeContract({
+  const hash = await (walletClient.writeContract as any)({
     address: config.oracleAddress,
     abi: ORACLE_ABI,
     functionName: "submitStreak",
     args: [
       qualifying.player,
       qualifying.roundId,
-      BigInt(qualifying.dayIndex),
+      qualifying.dayIndex,
       qualifying.txCount,
       qualifying.uniqueToCount,
     ],
-    // Legacy tx mode for Celo (no maxFeePerGas / maxPriorityFeePerGas)
-    gasPrice: BigInt(5_000_000_000), // 5 gwei
+    gasPrice: BigInt(5_000_000_000),
   });
 
   log.info(`Streak submitted. Tx: ${hash}`);
@@ -172,13 +171,13 @@ export async function batchSubmitStreaks(
 
   const players = qualifyingList.map((q) => q.player);
   const roundIds = qualifyingList.map((q) => q.roundId);
-  const dayIndexes = qualifyingList.map((q) => BigInt(q.dayIndex));
+  const dayIndexes = qualifyingList.map((q) => q.dayIndex);
   const txCounts = qualifyingList.map((q) => q.txCount);
   const uniqueToCounts = qualifyingList.map((q) => q.uniqueToCount);
 
   log.info(`Batch submitting ${qualifyingList.length} streak proofs...`);
 
-  const hash = await walletClient.writeContract({
+  const hash = await (walletClient.writeContract as any)({
     address: config.oracleAddress,
     abi: ORACLE_ABI,
     functionName: "batchSubmitStreaks",

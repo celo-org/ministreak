@@ -24,22 +24,29 @@ export function useLeaderboard(roundId: string | undefined) {
       const potUsdt = parseFloat(formatUnits(BigInt(round.pot), 6));
       const distributable = potUsdt * 0.95; // after 5% protocol fee
 
-      const entries: LeaderboardEntry[] = round.playerRounds.map((pr, i) => {
-        const rank = pr.rank ? parseInt(pr.rank) : i + 1;
-        let prize = "0.00";
-        if (rank === 1) prize = (distributable * 0.5).toFixed(2);
-        else if (rank === 2) prize = (distributable * 0.3).toFixed(2);
-        else if (rank === 3) prize = (distributable * 0.2).toFixed(2);
-
-        return {
-          rank,
+      const entries: LeaderboardEntry[] = round.playerRounds
+        .map((pr) => ({
+          rank: 0, // assigned after sorting
           address: pr.player.address || pr.player.id,
           streak: parseInt(pr.streak),
           txCount: parseInt(pr.txCount),
           uniqueToCount: parseInt(pr.uniqueToCount),
-          estimatedPrize: prize,
-        };
-      });
+          estimatedPrize: "0.00",
+        }))
+        .sort((a, b) => {
+          // Three-tier tiebreaker: streak DESC → txCount DESC → uniqueToCount DESC
+          if (b.streak !== a.streak) return b.streak - a.streak;
+          if (b.txCount !== a.txCount) return b.txCount - a.txCount;
+          return b.uniqueToCount - a.uniqueToCount;
+        })
+        .map((entry, i) => {
+          const rank = i + 1;
+          let prize = "0.00";
+          if (rank === 1) prize = (distributable * 0.5).toFixed(2);
+          else if (rank === 2) prize = (distributable * 0.3).toFixed(2);
+          else if (rank === 3) prize = (distributable * 0.2).toFixed(2);
+          return { ...entry, rank, estimatedPrize: prize };
+        });
 
       return {
         round,

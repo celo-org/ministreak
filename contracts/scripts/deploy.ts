@@ -1,9 +1,9 @@
 /**
  * deploy.ts
- * Deploys CeloGrindVault and StreakOracle to Celo Alfajores (or Mainnet).
+ * Deploys MiniStreak and StreakOracle to Celo Sepolia (or Mainnet).
  *
  * Usage:
- *   npx hardhat run scripts/deploy.ts --network alfajores
+ *   npx hardhat run scripts/deploy.ts --network celoSepolia
  *   npx hardhat run scripts/deploy.ts --network celo
  *
  * After deploy, update constants.ts with the returned addresses.
@@ -77,7 +77,7 @@ async function main() {
 
   console.log(`USDT:      ${usdtAddress}`);
 
-  // ─── 2. Deploy CeloGrindVault ─────────────────────────────────────────────
+  // ─── 2. Deploy MiniStreak ─────────────────────────────────────────────────
 
   console.log("\n[2/4] Deploying MiniStreak...");
   const VaultFactory = await ethers.getContractFactory("MiniStreak");

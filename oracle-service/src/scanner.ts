@@ -104,17 +104,17 @@ async function fetchOutgoingTxs(
   let nextPageParams: string | null = null;
 
   while (true) {
-    const url = nextPageParams
+    const url: string = nextPageParams
       ? `${BLOCKSCOUT_API}/addresses/${address}/transactions?filter=from${nextPageParams}`
       : `${BLOCKSCOUT_API}/addresses/${address}/transactions?filter=from`;
 
-    const res = await fetch(url);
+    const res: Response = await fetch(url);
     if (!res.ok) {
       log.warn(`Blockscout API error for ${address}: ${res.status}`);
       break;
     }
 
-    const data = await res.json();
+    const data: { items: Array<{ timestamp: string; to?: { hash: string } }>; next_page_params?: { block_number: string; index: number } } = await res.json();
     const items = data.items || [];
 
     let foundOlderThanToday = false;
@@ -133,7 +133,7 @@ async function fetchOutgoingTxs(
 
     if (foundOlderThanToday || !data.next_page_params) break;
 
-    const params = data.next_page_params;
+    const params: { block_number: string; index: number } = data.next_page_params;
     nextPageParams = `&block_number=${params.block_number}&index=${params.index}`;
   }
 

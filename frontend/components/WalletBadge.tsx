@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 
@@ -22,6 +23,13 @@ export default function WalletBadge() {
   // In MiniPay, wallet is implicit — hide connect/disconnect UI
   const isMiniPay =
     typeof window !== "undefined" && window.ethereum?.isMiniPay === true;
+
+  // Auto-connect in MiniPay — wallet is always available
+  useEffect(() => {
+    if (isMiniPay && !isConnected) {
+      connect({ connector: injected() });
+    }
+  }, [isMiniPay, isConnected, connect]);
 
   if (isMiniPay && isConnected) {
     return (

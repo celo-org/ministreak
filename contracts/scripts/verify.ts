@@ -1,19 +1,15 @@
 /**
  * verify.ts
- * Verifies deployed contracts on Celoscan.
+ * Verifies deployed contracts on Blockscout / Celoscan.
  *
  * Usage:
- *   npx hardhat run scripts/verify.ts --network alfajores
+ *   npx hardhat run scripts/verify.ts --network celoSepolia
+ *   npx hardhat run scripts/verify.ts --network celo
  */
 
 import { run, network } from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
-
-const CUSD: Record<string, string> = {
-  alfajores: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
-  celo: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
-};
 
 async function main() {
   const deploymentPath = path.join(
@@ -25,26 +21,25 @@ async function main() {
   }
 
   const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf-8"));
-  const { vault, oracle } = deployment.contracts;
-  const cusd = CUSD[network.name];
+  const { vault, oracle, usdt } = deployment.contracts;
   const treasury = deployment.treasury;
   const oracleHotWallet = deployment.oracleHotWallet;
 
-  console.log(`\n=== Verifying on Celoscan (${network.name}) ===`);
+  console.log(`\n=== Verifying on Blockscout (${network.name}) ===`);
 
-  // Verify CeloGrindVault
-  console.log(`\nVerifying CeloGrindVault at ${vault}...`);
+  // Verify MiniStreak
+  console.log(`\nVerifying MiniStreak at ${vault}...`);
   try {
     await run("verify:verify", {
       address: vault,
-      constructorArguments: [cusd, treasury],
+      constructorArguments: [usdt, treasury],
     });
-    console.log("CeloGrindVault verified!");
+    console.log("MiniStreak verified!");
   } catch (e: any) {
     if (e.message?.includes("Already Verified")) {
-      console.log("CeloGrindVault already verified.");
+      console.log("MiniStreak already verified.");
     } else {
-      console.error("CeloGrindVault verification failed:", e.message);
+      console.error("MiniStreak verification failed:", e.message);
     }
   }
 

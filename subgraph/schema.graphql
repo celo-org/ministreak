@@ -6,7 +6,7 @@ type Round @entity {
   roundId: BigInt!
   startTime: BigInt!
   endTime: BigInt!
-  pot: BigDecimal!                # total cUSD pot (formatted, e.g. 10.0)
+  pot: BigDecimal!                # total USDT pot (formatted, e.g. 10.0)
   potRaw: BigInt!                 # raw wei amount
   status: RoundStatus!
   playerCount: BigInt!
@@ -31,7 +31,7 @@ type Player @entity {
   id: ID!                         # player address (lowercased)
   address: Bytes!
   totalRoundsEntered: BigInt!
-  totalWinnings: BigDecimal!      # cumulative cUSD winnings
+  totalWinnings: BigDecimal!      # cumulative USDT winnings
   totalWinningsRaw: BigInt!
   bestStreak: BigInt!             # all-time best streak across all rounds
   playerRounds: [PlayerRound!]! @derivedFrom(field: "player")

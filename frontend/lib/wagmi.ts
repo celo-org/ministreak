@@ -2,7 +2,7 @@
 
 import { createConfig, http } from "wagmi";
 import { injected, walletConnect } from "wagmi/connectors";
-import { celo, celoAlfajores } from "viem/chains";
+import { celo } from "viem/chains";
 import { defineChain } from "viem";
 
 // Celo Sepolia testnet (primary developer testnet, chain ID 11142220)
@@ -31,26 +31,25 @@ const hardhatLocal = defineChain({
   },
 });
 
-const chainId = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "11142220");
+const chainId = parseInt((process.env.NEXT_PUBLIC_CHAIN_ID || "11142220").trim());
 
 function getActiveChain() {
   if (chainId === 42220)   return celo;
   if (chainId === 31337)   return hardhatLocal;
-  if (chainId === 44787)   return celoAlfajores;
+  if (chainId === 44787)   return celoSepolia; // legacy fallback
   return celoSepolia; // default: Celo Sepolia
 }
 
 const activeChain = getActiveChain();
 
-const rpcUrl =
-  process.env.NEXT_PUBLIC_CELO_RPC_URL ||
+const rpcUrl = (process.env.NEXT_PUBLIC_CELO_RPC_URL || 
   (chainId === 42220
     ? "https://forno.celo.org"
     : chainId === 31337
     ? "http://127.0.0.1:8545"
     : chainId === 44787
     ? "https://alfajores-forno.celo-testnet.org"
-    : "https://forno.celo-sepolia.celo-testnet.org");
+    : "https://forno.celo-sepolia.celo-testnet.org")).trim();
 
 const wcProjectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";

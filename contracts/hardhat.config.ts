@@ -25,7 +25,7 @@ const config: HardhatUserConfig = {
       url: process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org",
       chainId: 11142220,
       accounts: [DEPLOYER_PRIVATE_KEY],
-      gasPrice: 1_000_000_000, // 1 gwei — Celo Sepolia (OP-stack L2)
+      gasPrice: 5_000_000_000,
     },
     // Celo Alfajores Testnet (legacy, kept for compatibility)
     alfajores: {

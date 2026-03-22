@@ -1,14 +1,21 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
-  title: "Celo Grind — Weekly Streak Leaderboard",
+  title: "MiniStreak — Weekly Streak Leaderboard",
   description:
     "Compete in weekly on-chain transaction streak competitions on Celo. Build your streak, climb the leaderboard, win USDT.",
-  metadataBase: new URL("https://celo-grind.vercel.app"),
+  metadataBase: new URL("https://frontend-ch20jts8y-onelegteagmailcoms-projects.vercel.app"),
   openGraph: {
-    title: "Celo Grind",
+    title: "MiniStreak",
     description: "Weekly transaction streak leaderboard on Celo",
     type: "website",
   },

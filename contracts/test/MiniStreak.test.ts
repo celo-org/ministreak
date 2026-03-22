@@ -29,17 +29,17 @@ async function deployFixture() {
 
   // Deploy mock USDT (6 decimals to match real USDT)
   const MockERC20Factory = await ethers.getContractFactory("MockERC20");
-  const cusd = await MockERC20Factory.deploy("Tether USD", "USDT", 6);
-  const cusdAddress = await cusd.getAddress();
+  const usdt = await MockERC20Factory.deploy("Tether USD", "USDT", 6);
+  const usdtAddress = await usdt.getAddress();
 
   // Mint USDT to test players
   for (const player of [alice, bob, carol, dave]) {
-    await cusd.mint(player.address, ethers.parseUnits("1000", 6));
+    await usdt.mint(player.address, ethers.parseUnits("1000", 6));
   }
 
   // Deploy Vault
   const VaultFactory = await ethers.getContractFactory("MiniStreak");
-  const vault = await VaultFactory.deploy(cusdAddress, treasury.address);
+  const vault = await VaultFactory.deploy(usdtAddress, treasury.address);
   const vaultAddress = await vault.getAddress();
 
   // Deploy Oracle
@@ -60,14 +60,14 @@ async function deployFixture() {
     player: SignerWithAddress,
     roundId: bigint
   ) => {
-    await cusd.connect(player).approve(vaultAddress, ENTRY_FEE);
+    await usdt.connect(player).approve(vaultAddress, ENTRY_FEE);
     await vault.connect(player).enterRound(roundId);
   };
 
   return {
     vault,
     oracle,
-    cusd,
+    usdt,
     owner,
     treasury,
     oracleHotWallet,
@@ -78,7 +78,7 @@ async function deployFixture() {
     dave,
     vaultAddress,
     oracleAddress,
-    cusdAddress,
+    usdtAddress,
     ORACLE_ROLE,
     KEEPER_ROLE,
     enterRound,
@@ -122,12 +122,12 @@ describe("MiniStreak", () => {
   // ── enterRound ──────────────────────────────────────────────────────────────
   describe("enterRound", () => {
     it("accepts 0.5 USDT and registers player with txCount=1", async () => {
-      const { vault, cusd, alice, vaultAddress, enterRound } =
+      const { vault, usdt, alice, vaultAddress, enterRound } =
         await loadFixture(deployFixture);
 
-      const balanceBefore = await cusd.balanceOf(alice.address);
+      const balanceBefore = await usdt.balanceOf(alice.address);
       await enterRound(alice, 1n);
-      const balanceAfter = await cusd.balanceOf(alice.address);
+      const balanceAfter = await usdt.balanceOf(alice.address);
 
       expect(balanceBefore - balanceAfter).to.equal(ENTRY_FEE);
 
@@ -147,20 +147,20 @@ describe("MiniStreak", () => {
     });
 
     it("emits PlayerEntered event", async () => {
-      const { vault, cusd, alice, vaultAddress, enterRound } =
+      const { vault, usdt, alice, vaultAddress, enterRound } =
         await loadFixture(deployFixture);
 
-      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE);
+      await usdt.connect(alice).approve(vaultAddress, ENTRY_FEE);
       await expect(vault.connect(alice).enterRound(1n))
         .to.emit(vault, "PlayerEntered")
         .withArgs(1n, alice.address, ENTRY_FEE);
     });
 
     it("reverts on double entry", async () => {
-      const { vault, cusd, alice, vaultAddress } =
+      const { vault, usdt, alice, vaultAddress } =
         await loadFixture(deployFixture);
 
-      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE * 2n);
+      await usdt.connect(alice).approve(vaultAddress, ENTRY_FEE * 2n);
       await vault.connect(alice).enterRound(1n);
       await expect(
         vault.connect(alice).enterRound(1n)
@@ -168,21 +168,21 @@ describe("MiniStreak", () => {
     });
 
     it("reverts on wrong round ID", async () => {
-      const { vault, cusd, alice, vaultAddress } =
+      const { vault, usdt, alice, vaultAddress } =
         await loadFixture(deployFixture);
 
-      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE);
+      await usdt.connect(alice).approve(vaultAddress, ENTRY_FEE);
       await expect(
         vault.connect(alice).enterRound(99n)
       ).to.be.revertedWithCustomError(vault, "InvalidRoundId");
     });
 
     it("reverts when round has ended", async () => {
-      const { vault, cusd, alice, vaultAddress } =
+      const { vault, usdt, alice, vaultAddress } =
         await loadFixture(deployFixture);
 
       await time.increase(SEVEN_DAYS + 1);
-      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE);
+      await usdt.connect(alice).approve(vaultAddress, ENTRY_FEE);
       await expect(
         vault.connect(alice).enterRound(1n)
       ).to.be.revertedWithCustomError(vault, "RoundNotOpen");
@@ -351,24 +351,24 @@ describe("MiniStreak", () => {
     });
 
     it("distributes 50/30/20 split correctly", async () => {
-      const { vault, cusd, keeper, alice, bob, carol, treasury } =
+      const { vault, usdt, keeper, alice, bob, carol, treasury } =
         await threePlayerRound();
 
       const pot = 3n * ENTRY_FEE;
       const protocolFee = (pot * 500n) / 10000n; // 5%
       const distributable = pot - protocolFee;
 
-      const aliceBefore = await cusd.balanceOf(alice.address);
-      const bobBefore = await cusd.balanceOf(bob.address);
-      const carolBefore = await cusd.balanceOf(carol.address);
-      const treasuryBefore = await cusd.balanceOf(treasury.address);
+      const aliceBefore = await usdt.balanceOf(alice.address);
+      const bobBefore = await usdt.balanceOf(bob.address);
+      const carolBefore = await usdt.balanceOf(carol.address);
+      const treasuryBefore = await usdt.balanceOf(treasury.address);
 
       await vault.connect(keeper).resolveRound(1n);
 
-      const aliceAfter = await cusd.balanceOf(alice.address);
-      const bobAfter = await cusd.balanceOf(bob.address);
-      const carolAfter = await cusd.balanceOf(carol.address);
-      const treasuryAfter = await cusd.balanceOf(treasury.address);
+      const aliceAfter = await usdt.balanceOf(alice.address);
+      const bobAfter = await usdt.balanceOf(bob.address);
+      const carolAfter = await usdt.balanceOf(carol.address);
+      const treasuryAfter = await usdt.balanceOf(treasury.address);
 
       expect(aliceAfter - aliceBefore).to.equal((distributable * 50n) / 100n);
       expect(bobAfter - bobBefore).to.equal((distributable * 30n) / 100n);
@@ -491,14 +491,14 @@ describe("MiniStreak", () => {
   // ── resolveRound — <3 players ─────────────────────────────────────────────
   describe("resolveRound — fewer than 3 players", () => {
     it("refunds when only 2 players entered", async () => {
-      const { vault, cusd, keeper, alice, bob, enterRound } =
+      const { vault, usdt, keeper, alice, bob, enterRound } =
         await loadFixture(deployFixture);
 
       await enterRound(alice, 1n);
       await enterRound(bob, 1n);
 
-      const aliceBefore = await cusd.balanceOf(alice.address);
-      const bobBefore = await cusd.balanceOf(bob.address);
+      const aliceBefore = await usdt.balanceOf(alice.address);
+      const bobBefore = await usdt.balanceOf(bob.address);
 
       await time.increase(SEVEN_DAYS + 1);
       await vault.connect(keeper).resolveRound(1n);
@@ -509,8 +509,8 @@ describe("MiniStreak", () => {
       await vault.connect(alice).claimRefund(1n);
       await vault.connect(bob).claimRefund(1n);
 
-      const aliceAfter = await cusd.balanceOf(alice.address);
-      const bobAfter = await cusd.balanceOf(bob.address);
+      const aliceAfter = await usdt.balanceOf(alice.address);
+      const bobAfter = await usdt.balanceOf(bob.address);
 
       expect(aliceAfter - aliceBefore).to.equal(ENTRY_FEE);
       expect(bobAfter - bobBefore).to.equal(ENTRY_FEE);
@@ -634,11 +634,11 @@ describe("MiniStreak", () => {
     });
 
     it("owner can pause and unpause", async () => {
-      const { vault, owner, cusd, alice, vaultAddress } =
+      const { vault, owner, usdt, alice, vaultAddress } =
         await loadFixture(deployFixture);
 
       await vault.connect(owner).pause();
-      await cusd.connect(alice).approve(vaultAddress, ENTRY_FEE);
+      await usdt.connect(alice).approve(vaultAddress, ENTRY_FEE);
       await expect(
         vault.connect(alice).enterRound(1n)
       ).to.be.revertedWithCustomError(vault, "EnforcedPause");
@@ -729,7 +729,7 @@ describe("MiniStreak", () => {
   // ── 2-with-streaks payout ────────────────────────────────────────────────
   describe("resolveRound — exactly 3 players, 2 with streaks", () => {
     it("distributes 50/30/20 with carol ranked 3rd (all players have txCount from entry)", async () => {
-      const { vault, cusd, oracle, oracleHotWallet, keeper, alice, bob, carol, enterRound } =
+      const { vault, usdt, oracle, oracleHotWallet, keeper, alice, bob, carol, enterRound } =
         await loadFixture(deployFixture);
 
       await enterRound(alice, 1n);
@@ -745,16 +745,16 @@ describe("MiniStreak", () => {
       const fee = (pot * 500n) / 10000n;
       const dist = pot - fee;
 
-      const aliceBefore = await cusd.balanceOf(alice.address);
-      const bobBefore = await cusd.balanceOf(bob.address);
-      const carolBefore = await cusd.balanceOf(carol.address);
+      const aliceBefore = await usdt.balanceOf(alice.address);
+      const bobBefore = await usdt.balanceOf(bob.address);
+      const carolBefore = await usdt.balanceOf(carol.address);
 
       await time.increase(SEVEN_DAYS + 1);
       await vault.connect(keeper).resolveRound(1n);
 
-      const aliceAfter = await cusd.balanceOf(alice.address);
-      const bobAfter = await cusd.balanceOf(bob.address);
-      const carolAfter = await cusd.balanceOf(carol.address);
+      const aliceAfter = await usdt.balanceOf(alice.address);
+      const bobAfter = await usdt.balanceOf(bob.address);
+      const carolAfter = await usdt.balanceOf(carol.address);
 
       // 3-way split: 50% / 30% / 20%
       expect(aliceAfter - aliceBefore).to.equal((dist * 50n) / 100n);

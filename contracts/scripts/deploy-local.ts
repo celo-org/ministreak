@@ -1,6 +1,6 @@
 /**
  * deploy-local.ts
- * Deploys contracts to the local Hardhat node, mints test cUSD to the
+ * Deploys contracts to the local Hardhat node, mints test USDT to the
  * first 5 accounts, and writes a ready-to-use frontend/.env.local file.
  *
  * Usage:
@@ -26,7 +26,7 @@ async function main() {
   console.log(`Network:  ${network.name} (chainId: 31337)`);
   console.log(`Deployer: ${deployer.address}`);
 
-  // ── 1. Deploy MockERC20 as local "cUSD" ──────────────────────────────────
+  // ── 1. Deploy MockERC20 as local USDT ────────────────────────────────────
 
   console.log("\n[1/4] Deploying MockUSDT (local testnet token)...");
   const MockERC20 = await ethers.getContractFactory("MockERC20");
@@ -42,7 +42,7 @@ async function main() {
     console.log(`      Minted 10,000 USDT → ${signer.address}`);
   }
 
-  // ── 2. Deploy CeloGrindVault ──────────────────────────────────────────────
+  // ── 2. Deploy MiniStreak ──────────────────────────────────────────────────
 
   console.log("\n[2/4] Deploying MiniStreak...");
   const Vault = await ethers.getContractFactory("MiniStreak");
