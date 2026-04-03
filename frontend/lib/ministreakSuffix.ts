@@ -15,7 +15,7 @@
 import { type Hex, concatHex, stringToHex } from "viem";
 
 // Precompute the suffix once at module load
-const CODE_HEX = stringToHex("ministreak"); // 0x6d696e69737472656b
+const CODE_HEX = stringToHex("ministreak"); // 0x6d696e6973747265616b
 const LENGTH_BYTE: Hex = "0x0a"; // 10
 const SCHEMA_BYTE: Hex = "0x00";
 const MARKER: Hex = "0x80218021802180218021802180218021";
