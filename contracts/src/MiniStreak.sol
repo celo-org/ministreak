@@ -150,8 +150,8 @@ contract MiniStreak is AccessControl, Pausable, ReentrancyGuard {
     // ─── Player Actions ───────────────────────────────────────────────────────
 
     /**
-     * @notice Enter the current round by paying 0.5 USDT entry fee.
-     * @dev Caller must have approved this contract to spend 0.5 USDT before calling.
+     * @notice Enter the current round by paying 0.1 USDT entry fee.
+     * @dev Caller must have approved this contract to spend 0.1 USDT before calling.
      * @param roundId The round to enter (must equal currentRoundId and be Open)
      */
     function enterRound(uint256 roundId) external nonReentrant whenNotPaused {
@@ -164,7 +164,7 @@ contract MiniStreak is AccessControl, Pausable, ReentrancyGuard {
         PlayerRecord storage record = playerRecords[roundId][msg.sender];
         if (record.entered) revert AlreadyEntered();
 
-        // Transfer 0.5 USDT from player to this contract
+        // Transfer 0.1 USDT from player to this contract
         usdt.safeTransferFrom(msg.sender, address(this), ENTRY_FEE);
 
         record.entered = true;
