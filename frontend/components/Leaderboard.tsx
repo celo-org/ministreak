@@ -14,11 +14,8 @@ function truncateAddress(addr: string): string {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
-function rankBadge(rank: number) {
-  if (rank === 1) return "🥇";
-  if (rank === 2) return "🥈";
-  if (rank === 3) return "🥉";
-  return `#${rank}`;
+function rankLabel(rank: number): { text: string; isTop3: boolean } {
+  return { text: `#${rank}`, isTop3: rank <= 3 };
 }
 
 export default function Leaderboard({
@@ -32,7 +29,7 @@ export default function Leaderboard({
     return (
       <div className="space-y-2">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-14 bg-gray-800 rounded-xl animate-pulse" />
+          <div key={i} className="h-14 bg-arcade-card rounded-sm animate-pulse" />
         ))}
       </div>
     );
@@ -40,8 +37,10 @@ export default function Leaderboard({
 
   if (!entries.length) {
     return (
-      <div className="card text-center text-gray-500 py-8">
-        No players yet this round.
+      <div className="card text-center py-8">
+        <p className="font-pixel text-arcade-muted" style={{ fontSize: "8px" }}>
+          NO PLAYERS YET
+        </p>
       </div>
     );
   }
@@ -51,13 +50,13 @@ export default function Leaderboard({
   return (
     <div className="space-y-2">
       {/* Header */}
-      <div className="grid grid-cols-12 text-xs text-gray-500 px-3 pb-1">
+      <div className="grid grid-cols-12 font-pixel text-arcade-muted px-3 pb-1" style={{ fontSize: "5px" }}>
         <span className="col-span-1">#</span>
-        <span className="col-span-4">Wallet</span>
-        <span className="col-span-2 text-center">Streak</span>
-        <span className="col-span-1 text-center">Txs</span>
-        <span className="col-span-2 text-center">Uniq</span>
-        {showPrizes && <span className="col-span-2 text-right">Prize</span>}
+        <span className="col-span-4">WALLET</span>
+        <span className="col-span-2 text-center">STREAK</span>
+        <span className="col-span-1 text-center">TXS</span>
+        <span className="col-span-2 text-center">UNIQ</span>
+        {showPrizes && <span className="col-span-2 text-right">PRIZE</span>}
       </div>
 
       {displayedEntries.map((entry) => {
@@ -70,48 +69,54 @@ export default function Leaderboard({
           prevEntry.streak === entry.streak &&
           prevEntry.txCount === entry.txCount &&
           prevEntry.uniqueToCount === entry.uniqueToCount;
+        const { text: rankText, isTop3 } = rankLabel(entry.rank);
 
         return (
           <div
             key={entry.address}
-            className={`grid grid-cols-12 items-center py-3 px-3 rounded-xl border transition-colors ${
+            className={`grid grid-cols-12 items-center py-3 px-3 rounded-sm border transition-colors ${
               isMe
                 ? "bg-celo-green/10 border-celo-green/40"
-                : "bg-gray-900 border-gray-800"
+                : "bg-arcade-card border-arcade-dim"
             }`}
           >
-            <span className="col-span-1 text-lg">{rankBadge(entry.rank)}</span>
+            <span
+              className={`col-span-1 font-pixel ${
+                isTop3 ? "text-celo-gold" : "text-arcade-muted"
+              }`}
+              style={{ fontSize: "9px" }}
+            >
+              {rankText}
+            </span>
 
             <div className="col-span-4">
-              <p className={`text-sm font-mono ${isMe ? "text-celo-green font-bold" : "text-gray-200"}`}>
+              <p className={`text-xs font-mono ${isMe ? "text-celo-green font-bold" : "text-gray-200"}`}>
                 {truncateAddress(entry.address)}
-                {isMe && <span className="ml-1 text-xs">(you)</span>}
+                {isMe && (
+                  <span className="font-pixel text-celo-green ml-1" style={{ fontSize: "5px" }}>
+                    YOU
+                  </span>
+                )}
               </p>
             </div>
 
             <div className="col-span-2 text-center">
-              <span className="text-sm font-bold text-white">
+              <span className="font-pixel text-celo-green" style={{ fontSize: "9px" }}>
                 {entry.streak}
-                {entry.streak > 0 && " "}
-                {entry.streak >= 7
-                  ? "🔥"
-                  : entry.streak >= 4
-                  ? "⚡"
-                  : entry.streak > 0
-                  ? "✨"
-                  : ""}
               </span>
               {isTied && (
-                <p className="text-xs text-celo-gold">tied</p>
+                <p className="font-pixel text-celo-gold" style={{ fontSize: "5px" }}>
+                  TIED
+                </p>
               )}
             </div>
 
             <div className="col-span-1 text-center">
-              <span className="text-xs text-gray-400">{entry.txCount}</span>
+              <span className="text-xs text-arcade-muted">{entry.txCount}</span>
             </div>
 
             <div className="col-span-2 text-center">
-              <span className="text-xs text-gray-400">{entry.uniqueToCount}</span>
+              <span className="text-xs text-arcade-muted">{entry.uniqueToCount}</span>
             </div>
 
             {showPrizes && (
