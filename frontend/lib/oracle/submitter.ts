@@ -20,7 +20,7 @@ const ORACLE_ABI = parseAbi([
 /**
  * Check which qualifying txs have already been submitted on-chain.
  * Uses viem multicall for a single RPC round-trip.
- * Returns a Set of player addresses that are already submitted.
+ * Returns a Set of "player:dayIndex" keys that are already submitted.
  */
 export async function checkAlreadySubmitted(
   client: PublicClient,
@@ -41,7 +41,8 @@ export async function checkAlreadySubmitted(
   const alreadySubmitted = new Set<string>();
   for (let i = 0; i < results.length; i++) {
     if (results[i].status === "success" && results[i].result === true) {
-      alreadySubmitted.add(qualifyingTxs[i].player.toLowerCase());
+      const key = `${qualifyingTxs[i].player.toLowerCase()}:${qualifyingTxs[i].dayIndex}`;
+      alreadySubmitted.add(key);
     }
   }
 

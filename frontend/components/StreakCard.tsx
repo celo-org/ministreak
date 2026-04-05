@@ -21,31 +21,14 @@ export default function StreakCard({
 
   return (
     <div className={`card border-2 ${todayDone ? "border-celo-green" : "border-arcade-dim"}`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-pixel text-celo-green mb-1" style={{ fontSize: "7px" }}>
-            CURRENT STREAK
-          </p>
-          <span className="font-pixel text-4xl text-white">{streak}</span>
-          <p className="font-pixel text-arcade-muted mt-1" style={{ fontSize: "7px" }}>
-            {streak === 1 ? "1 DAY" : `${streak} DAYS`} IN A ROW
-          </p>
-        </div>
-
-        <div className="flex flex-col items-center gap-1">
-          <div
-            className={`w-10 h-10 rounded-sm flex items-center justify-center font-pixel text-lg ${
-              todayDone
-                ? "bg-celo-green/15 border-2 border-celo-green text-celo-green"
-                : "bg-arcade-card border-2 border-arcade-dim text-arcade-dim"
-            }`}
-          >
-            {todayDone ? "x" : ""}
-          </div>
-          <p className={`font-pixel ${todayDone ? "text-celo-green" : "text-red-400"}`} style={{ fontSize: "6px" }}>
-            {todayDone ? "DONE TODAY" : "PENDING"}
-          </p>
-        </div>
+      <div className="text-center">
+        <p className="font-pixel text-celo-green mb-1" style={{ fontSize: "7px" }}>
+          CURRENT STREAK
+        </p>
+        <span className="font-pixel text-4xl text-white">{streak}</span>
+        <p className="font-pixel text-arcade-muted mt-1" style={{ fontSize: "7px" }}>
+          {streak === 1 ? "1 DAY" : `${streak} DAYS`} IN A ROW
+        </p>
       </div>
 
       {!todayDone && streak > 0 && (

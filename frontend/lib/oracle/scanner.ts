@@ -39,15 +39,40 @@ const VAULT_ABI = parseAbi([
 
 const BLOCKSCOUT_API = "https://celo.blockscout.com/api/v2";
 
-function getTodayUTCWindow(): { start: number; end: number } {
-  const now = Date.now();
-  const startOfDay = Math.floor(now / 86400000) * 86400;
-  return { start: startOfDay, end: startOfDay + 86399 };
-}
+/**
+ * Returns the UTC day boundaries for each day from round start through today.
+ * Each entry: { dayIndex, start (unix seconds), end (unix seconds) }
+ */
+function getRoundDayWindows(roundStartTime: bigint): Array<{
+  dayIndex: number;
+  start: number;
+  end: number;
+}> {
+  const roundStart = Number(roundStartTime);
+  // First full UTC day at or after round start
+  const firstDayStart = Math.ceil(roundStart / 86400) * 86400;
+  // If round started exactly at midnight, use that; otherwise next midnight
+  const effectiveFirstDay =
+    roundStart % 86400 === 0 ? roundStart : firstDayStart;
 
-function getDayIndex(todayStartTimestamp: bigint, roundStartTime: bigint): number {
-  const secondsIntoRound = Number(todayStartTimestamp - roundStartTime);
-  return Math.floor(secondsIntoRound / 86400);
+  const now = Math.floor(Date.now() / 1000);
+  const todayStart = Math.floor(now / 86400) * 86400;
+
+  const windows: Array<{ dayIndex: number; start: number; end: number }> = [];
+
+  // Day 0 starts at round start time, ends at first UTC midnight
+  // But we align day boundaries to UTC days for Blockscout filtering
+  for (let dayStart = effectiveFirstDay; dayStart <= todayStart; dayStart += 86400) {
+    const dayIndex = Math.floor((dayStart - roundStart) / 86400);
+    if (dayIndex < 0 || dayIndex > 6) continue;
+    windows.push({
+      dayIndex,
+      start: dayStart,
+      end: dayStart + 86399,
+    });
+  }
+
+  return windows;
 }
 
 // ─── Contract Reads ──────────────────────────────────────────────────────────
@@ -81,10 +106,13 @@ export async function getCurrentRound(
 
 // ─── Blockscout Scanning ─────────────────────────────────────────────────────
 
-async function fetchOutgoingTxsToday(
+/**
+ * Fetch all outgoing txs for an address from `sinceTimestamp` to now.
+ * Paginates through Blockscout API until it hits txs older than sinceTimestamp.
+ */
+async function fetchOutgoingTxsSince(
   address: Address,
-  todayStart: number,
-  todayEnd: number,
+  sinceTimestamp: number,
   apiKey: string
 ): Promise<Array<{ to: string | null; timestamp: number }>> {
   const txs: Array<{ to: string | null; timestamp: number }> = [];
@@ -108,20 +136,18 @@ async function fetchOutgoingTxsToday(
     } = await res.json();
 
     const items = data.items || [];
-    let foundOlderThanToday = false;
+    let foundOlder = false;
 
     for (const item of items) {
       const ts = Math.floor(new Date(item.timestamp).getTime() / 1000);
-      if (ts < todayStart) {
-        foundOlderThanToday = true;
+      if (ts < sinceTimestamp) {
+        foundOlder = true;
         break;
       }
-      if (ts >= todayStart && ts <= todayEnd) {
-        txs.push({ to: item.to?.hash || null, timestamp: ts });
-      }
+      txs.push({ to: item.to?.hash || null, timestamp: ts });
     }
 
-    if (foundOlderThanToday || !data.next_page_params) break;
+    if (foundOlder || !data.next_page_params) break;
     const params = data.next_page_params;
     nextPageParams = `&block_number=${params.block_number}&index=${params.index}`;
   }
@@ -129,63 +155,83 @@ async function fetchOutgoingTxsToday(
   return txs;
 }
 
-function analyzePlayerTxs(
+/**
+ * Bucket txs into day windows and produce a QualifyingTx per day that has
+ * valid outgoing (non-self-send) transactions.
+ */
+function analyzePlayerTxsByDay(
   player: Address,
   txs: Array<{ to: string | null; timestamp: number }>,
   roundInfo: RoundInfo,
-  dayIndex: number
-): QualifyingTx | null {
-  // Filter out self-sends
-  const validTxs = txs.filter(
-    (tx) => tx.to && tx.to.toLowerCase() !== player.toLowerCase()
-  );
+  dayWindows: Array<{ dayIndex: number; start: number; end: number }>
+): QualifyingTx[] {
+  const results: QualifyingTx[] = [];
 
-  if (validTxs.length === 0) return null;
+  for (const { dayIndex, start, end } of dayWindows) {
+    // Txs in this day window, excluding self-sends
+    const dayTxs = txs.filter(
+      (tx) =>
+        tx.timestamp >= start &&
+        tx.timestamp <= end &&
+        tx.to &&
+        tx.to.toLowerCase() !== player.toLowerCase()
+    );
 
-  const uniqueToAddresses = new Set<string>();
-  for (const tx of validTxs) {
-    uniqueToAddresses.add(tx.to!.toLowerCase());
+    if (dayTxs.length === 0) continue;
+
+    const uniqueToAddresses = new Set<string>();
+    for (const tx of dayTxs) {
+      uniqueToAddresses.add(tx.to!.toLowerCase());
+    }
+
+    results.push({
+      player,
+      roundId: roundInfo.roundId,
+      dayIndex,
+      txCount: dayTxs.length,
+      uniqueToCount: uniqueToAddresses.size,
+    });
   }
 
-  return {
-    player,
-    roundId: roundInfo.roundId,
-    dayIndex,
-    txCount: validTxs.length,
-    uniqueToCount: uniqueToAddresses.size,
-  };
+  return results;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * Scan all players concurrently for today's qualifying transactions.
- * Returns only players who have valid outgoing txs today (not self-sends).
+ * Scan all players concurrently for ALL days in the current round (not just today).
+ * Self-healing: if the cron missed a day, the next run catches up.
+ * Returns QualifyingTx entries per player per day with valid outgoing txs.
+ * Duplicate submissions are filtered later by checkAlreadySubmitted().
  */
 export async function scanAllPlayers(
   roundInfo: RoundInfo,
   apiKey: string
 ): Promise<QualifyingTx[]> {
-  const { start: todayStart, end: todayEnd } = getTodayUTCWindow();
-  const dayIndex = getDayIndex(BigInt(todayStart), roundInfo.startTime);
+  const dayWindows = getRoundDayWindows(roundInfo.startTime);
 
-  if (dayIndex < 0 || dayIndex > 6) {
-    console.log(`dayIndex ${dayIndex} out of range (0-6), skipping scan`);
+  if (dayWindows.length === 0) {
+    console.log("No day windows to scan (round may not have started yet)");
     return [];
   }
 
+  console.log(`Oracle: scanning ${dayWindows.length} day(s) in round (dayIndexes: ${dayWindows.map((d) => d.dayIndex).join(", ")})`);
+
+  // Earliest day start is the fetch cutoff — fetch all txs since round's first UTC day
+  const sinceTimestamp = dayWindows[0].start;
+
   const results = await Promise.allSettled(
     roundInfo.players.map(async (player) => {
-      const txs = await fetchOutgoingTxsToday(player, todayStart, todayEnd, apiKey);
-      if (txs.length === 0) return null;
-      return analyzePlayerTxs(player, txs, roundInfo, dayIndex);
+      const txs = await fetchOutgoingTxsSince(player, sinceTimestamp, apiKey);
+      if (txs.length === 0) return [];
+      return analyzePlayerTxsByDay(player, txs, roundInfo, dayWindows);
     })
   );
 
   const qualifying: QualifyingTx[] = [];
   for (const result of results) {
     if (result.status === "fulfilled" && result.value) {
-      qualifying.push(result.value);
+      qualifying.push(...result.value);
     } else if (result.status === "rejected") {
       console.warn(`Player scan failed: ${result.reason}`);
     }
