@@ -6,14 +6,16 @@
   :root {
     --celo-green: #35D07F;
     --celo-gold: #FBCC5C;
-    --celo-purple: #6C4FA0;
+    --arcade-bg: #0d1117;
+    --arcade-card: #111827;
+    --shadow-green: rgba(53, 208, 127, 0.2);
+    --shadow-btn: #1a6b40;
   }
 
   body {
     @apply antialiased;
   }
 
-  /* Mobile scroll behaviour for MiniPay */
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
@@ -22,22 +24,40 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-celo-green text-gray-950 font-bold py-3 px-6 rounded-2xl
+    @apply bg-celo-green text-arcade-bg font-pixel py-3 px-6 rounded-sm
            active:scale-95 transition-transform disabled:opacity-50
-           disabled:cursor-not-allowed w-full text-center;
+           disabled:cursor-not-allowed w-full text-center text-xs;
+    box-shadow: 4px 4px 0 var(--shadow-btn);
+  }
+
+  .btn-primary:disabled {
+    box-shadow: none;
   }
 
   .btn-secondary {
-    @apply bg-gray-800 text-gray-100 font-semibold py-3 px-6 rounded-2xl
-           border border-gray-700 active:scale-95 transition-transform
-           disabled:opacity-50 w-full text-center;
+    @apply bg-arcade-card text-gray-100 font-pixel py-3 px-6 rounded-sm
+           border border-arcade-dim active:scale-95 transition-transform
+           disabled:opacity-50 w-full text-center text-xs;
   }
 
   .card {
-    @apply bg-gray-900 rounded-2xl p-4 border border-gray-800;
+    @apply bg-arcade-card rounded-sm p-4 border border-celo-green;
+    box-shadow: 4px 4px 0 var(--shadow-green);
   }
 
   .badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs font-pixel;
+  }
+
+  .pixel-shadow {
+    box-shadow: 4px 4px 0 var(--shadow-green);
+  }
+
+  .glow-green {
+    text-shadow: 0 0 8px rgba(53, 208, 127, 0.5);
+  }
+
+  .glow-gold {
+    text-shadow: 0 0 6px rgba(251, 204, 92, 0.4);
   }
 }

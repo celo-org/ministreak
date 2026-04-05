@@ -10,20 +10,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Celo brand palette
         celo: {
           green: "#35D07F",
           gold: "#FBCC5C",
-          purple: "#6C4FA0",
-          dark: "#1E002B",
+        },
+        arcade: {
+          bg: "#0d1117",
+          card: "#111827",
+          muted: "#4B5563",
+          dim: "#374151",
+          timer: "#1a1a2e",
         },
       },
       fontFamily: {
+        pixel: ['"Press Start 2P"', "monospace"],
         sans: ["Inter", "system-ui", "sans-serif"],
-      },
-      animation: {
-        "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "bounce-fire": "bounce 0.8s infinite",
       },
     },
   },
