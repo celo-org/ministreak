@@ -1,458 +1,177 @@
-# Celo Grind — Weekly Transaction Streak Leaderboard
+# MiniStreak
 
-A MiniPay Mini App that runs weekly on-chain transaction streak competitions on Celo.
-Players pay 0.10 USDT to enter, maintain daily qualifying transactions to build streaks,
-and the longest streak at week's end wins the USDT pot.
+Show up every day. Win the week.
 
-**Game currency:** USDT (MockUSDT on testnets, real USDT on mainnet)
-**Testnet:** Celo Sepolia (chainId 11142220)
-**Mainnet:** Celo Mainnet (chainId 42220)
+MiniStreak is a weekly on-chain transaction streak competition on Celo. Pay 0.10 USDT to enter, send any outgoing transaction each day to keep your streak alive, and split the pot at week's end. Built for MiniPay.
 
----
+Live demo: [ministreak-fe.vercel.app](https://ministreak-fe.vercel.app) · Repository: [github.com/djokerops/ministreak](https://github.com/djokerops/ministreak)
 
-## Architecture
+## How It Works
 
+1. **Open in MiniPay** — the app auto-connects your wallet. No "Connect Wallet" button, no signatures.
+2. **Enter the round** — pay 0.10 USDT to join this week's pot. Weekly rounds run Monday 00:00 → Sunday 23:59 UTC.
+3. **Build your streak** — send any outgoing transaction each day (not a self-send). The oracle picks it up and extends your streak.
+4. **Climb the board** — ranked by longest streak, then tx count, then unique recipients. Ties broken by cumulative USDT volume.
+5. **Miss a day, you're out** — streak resets to zero. Show back up the next round.
+6. **Round resolves** — winners split the pot 50 / 30 / 20 (minus a 5% protocol fee). Fewer than 3 players? All entry fees are refunded automatically.
+
+## Features
+
+- **MiniPay-native** — auto-connect via injected provider, no `personal_sign` / `eth_signTypedData`, USDT/USDC/USDm only (no CELO surfaced in the UI)
+- **Pseudonym identity** — deterministic readable aliases (`BraveTiger-7F2A`) instead of raw `0x…` addresses across the wallet badge and leaderboard
+- **Balance-aware entry CTA** — detects low USDT and routes to MiniPay's `add_cash` deeplink; if you hold USDC or USDm instead, shows a "swap to USDT first" explainer
+- **ERC-8021 builder attribution** — every outgoing transaction carries the `ministreak` calldata suffix via `viem`'s `dataSuffix`
+- **Oracle-backed streak validation** — off-chain scanner verifies daily activity from public RPC, submits on-chain proofs through a role-gated `StreakOracle`
+- **Refund path** — if fewer than 3 players enter, the vault refunds every entry; no need to claim
+- **Subgraph indexing** — The Graph provides fast leaderboard reads with on-chain RPC fallback
+- **Light editorial theme** — cream paper aesthetic, deep forest + gold accents, readable type at proper sizes (no pixel font)
+
+## Smart Contracts
+(subject to change)
+
+The on-chain layer is two contracts (no proxies, no upgradeability — fixed once deployed):
+
+- **`MiniStreak`** — vault that holds entry fees, tracks per-player streak/tx-count/uniqueness, resolves payouts. Role-gated `ORACLE_ROLE` for streak submissions.
+- **`StreakOracle`** — thin attestation contract that the off-chain oracle calls to record validated daily activity. Forwards to the vault via `recordStreak`.
+- **Token**: USDT (6 decimals). Unowned-pixel-style payment? No — flat 0.10 USDT entry, vault custodies the pot.
+- **Round**: 7 days, Monday 00:00 → Sunday 23:59 UTC. New round opens automatically.
+- **Payout**: 50 / 30 / 20 of the distributable pot, after a 5% protocol fee to the treasury.
+- **Tiebreaker**: cumulative USDT volume across qualifying daily transactions.
+
+**Mainnet (Celo, chain ID 42220)**
+
+| Contract | Address |
+|---|---|
+| MiniStreak vault | `0xcd125da0EC85c8414D39fa94011b607C2A5f17e5` |
+| StreakOracle | `0x2c08420187F96a69E0aB64a1507282786E4f474e` |
+| USDT | `0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e` |
+
+
+## Getting Started
+
+The repo is a polyglot monorepo: Solidity (Hardhat), Next.js, a Node oracle, and a subgraph. Each package installs independently.
+
+```bash
+# 1. Smart contracts — compile + test
+cd contracts
+npm install
+npm run compile
+npm test
+
+# 2. Frontend — Next.js dev server
+cd ../frontend
+npm install
+NEXT_TELEMETRY_DISABLED=1 npm run dev    # http://localhost:3000
+
+# 3. Oracle service — local scanner
+cd ../oracle-service
+npm install
+npm run dev
+
+# 4. Subgraph (optional — frontend falls back to RPC reads)
+cd ../subgraph
+npm install
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     User / MiniPay / Browser                    │
-└────────────────────────┬────────────────────────────────────────┘
-                         │ wagmi + viem (legacy tx mode)
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Next.js 14 Frontend                           │
-│           (Vercel) — App Router, Tailwind CSS                   │
-│                                                                 │
-│  / Home   /leaderboard   /me   /rounds   /rules                 │
-└────────┬──────────────────────────────┬────────────────────────┘
-         │ contract reads/writes         │ GraphQL queries
-         ▼                              ▼
-┌────────────────────┐      ┌──────────────────────────┐
-│  MiniStreak        │      │  The Graph Subgraph       │
-│  StreakOracle      │      │  (PlayerEntered,          │
-│  (Celo Sepolia)    │      │   StreakRecorded, etc.)   │
-└────────┬───────────┘      └──────────────────────────┘
-         │ ORACLE_ROLE
-         ▼
-┌────────────────────────────────────────────────────────────────┐
-│               Oracle Service (Node.js + cron)                  │
-│                                                                │
-│  1. Scan player USDT tx via Celo RPC (every hour)             │
-│  2. Validate: not self-send, value >= 0.50 USDT, today UTC     │
-│  3. Submit proof to StreakOracle.sol                           │
-│  4. Log to SQLite to prevent double-submits                    │
-└────────────────────────────────────────────────────────────────┘
-         │ Chainlink Automation (weekly, Sunday 23:59 UTC)
-         ▼
-┌──────────────────────────────────┐
-│  MiniStreak.resolveRound()      │
-│  — compute rankings             │
-│  — distribute USDT prizes       │
-│  — start next round             │
-└──────────────────────────────────┘
+
+Each package has its own `.env.example`. Copy to `.env` and fill in deployer/oracle private keys and RPC URLs. Never commit `.env` or `.env.local` — both are in `.gitignore`.
+
+### Deploying
+
+```bash
+cd contracts
+npm run deploy:sepolia    # Celo Sepolia testnet
+npm run deploy:mainnet    # Celo Mainnet
+npm run verify:sepolia    # Blockscout verification (no API key required)
+npm run verify:mainnet    # Celoscan verification
 ```
 
----
+After deploying, copy the addresses into `frontend/.env.local` (NEXT_PUBLIC_VAULT_ADDRESS, NEXT_PUBLIC_ORACLE_ADDRESS, NEXT_PUBLIC_USDT_ADDRESS, NEXT_PUBLIC_CHAIN_ID).
 
 ## Project Structure
 
 ```
-celo-grind/
-├── contracts/            # Hardhat + Solidity smart contracts
-│   ├── src/
-│   │   ├── MiniStreak.sol    # Main game vault
-│   │   ├── StreakOracle.sol      # Off-chain data bridge
-│   │   └── MockERC20.sol         # Test-only ERC20 (local + testnet)
-│   ├── test/
-│   │   └── MiniStreak.test.ts  # 48 tests
-│   ├── scripts/
-│   │   ├── deploy-local.ts       # Local Hardhat node deploy + env setup
-│   │   ├── deploy.ts             # Deploy to Celo Sepolia / Mainnet
-│   │   ├── verify.ts             # Verify on Blockscout / Celoscan
-│   │   └── setup-chainlink.ts   # Register Chainlink Automation
-│   ├── hardhat.config.ts
-│   └── constants.ts              # Addresses + ABIs
-│
-├── subgraph/             # The Graph subgraph
-│   ├── schema.graphql
-│   ├── subgraph.yaml
-│   └── src/mapping.ts
-│
-├── oracle-service/       # Off-chain streak scanner
-│   ├── src/
-│   │   ├── index.ts      # Main cron entry point
-│   │   ├── scanner.ts    # Celo RPC transaction scanner
-│   │   ├── submitter.ts  # Oracle contract submitter
-│   │   ├── db.ts         # SQLite rate-limit tracking
-│   │   ├── logger.ts     # Structured logger
-│   │   └── config.ts     # Env var config
-│   ├── Dockerfile
-│   └── .env.example
-│
-└── frontend/             # Next.js 14 MiniPay app
-    ├── app/
-    │   ├── page.tsx          # Home / Dashboard
-    │   ├── leaderboard/page.tsx
-    │   ├── me/page.tsx
-    │   ├── rounds/page.tsx
-    │   └── rules/page.tsx
-    ├── components/
-    ├── hooks/
-    ├── lib/
-    │   ├── wagmi.ts        # wagmi config (Celo Sepolia + MiniPay + localhost)
-    │   ├── contracts.ts    # Contract addresses + ABIs
-    │   └── graphql.ts      # The Graph queries
-    └── vercel.json
+contracts/                    Solidity + Hardhat (TypeScript)
+  src/
+    MiniStreak.sol            Vault: entries, streaks, payouts
+    StreakOracle.sol          Role-gated attestation forwarder
+    MockERC20.sol             USDT mock for tests / local node
+  scripts/
+    deploy.ts                 Network-aware deploy (sepolia / mainnet)
+    deploy-local.ts           Hardhat local node deployment
+    verify.ts                 Blockscout / Celoscan verification
+  test/
+    MiniStreak.test.ts        Hardhat + chai (48 tests, all passing)
+  deployments/                Per-network address manifests (committed)
+
+frontend/                     Next.js 14 App Router
+  app/
+    page.tsx                  Home — pot, timer, streak, leaderboard top 5, how to play
+    leaderboard/page.tsx      Full standings + per-round stats
+    terms/page.tsx            Terms of Service (placeholder)
+    privacy/page.tsx          Privacy Policy (placeholder)
+    api/oracle/route.ts       Vercel cron endpoint (daily streak scan)
+    api/health/route.ts       Liveness probe
+  components/
+    EntryButton.tsx           Pay-to-enter CTA with balance-aware states
+    Leaderboard.tsx           Hairline-divided rows, medals on top 3
+    StreakCard.tsx            Day-counter with "today's in" pill
+    RoundTimer.tsx            Live countdown to round close
+    WalletBadge.tsx           MiniPay auto-connect, pseudonym pill
+    BottomNav.tsx             Home / Board tabs
+    Footer.tsx                Inline Terms · Privacy · Support links
+  hooks/
+    useEnterRound             USDT approve + enterRound, gas-buffered
+    useEntryEligibility       Reads USDT/USDC/USDm balances → ready/swap/deposit
+    useAttributedWalletClient Wraps viem walletClient with ERC-8021 dataSuffix
+    useLeaderboard            Subgraph query with on-chain RPC fallback
+    useCurrentRound,
+    usePlayerStats,
+    useTodayStreak            On-chain reads via wagmi
+  lib/
+    contracts.ts              Addresses + ABIs + deeplinks
+    pseudonym.ts              FNV-1a hash → readable alias
+    ministreakSuffix.ts       ERC-8021 calldata suffix bytes
+    wagmi.ts                  Chain config (Celo / Sepolia / local)
+
+oracle-service/               Node.js + cron streak scanner
+  src/
+    scanner.ts                Pulls outgoing txs per player via Celo RPC
+    submitter.ts              Validates + calls StreakOracle.recordStreak
+    db.ts                     SQLite — dedupe submitted (player, day) pairs
+    config.ts                 Loads env, validates required vars
+    index.ts                  Cron loop (default: hourly)
+
+subgraph/                     The Graph hosted indexer
+  schema.graphql              PlayerEntered, StreakRecorded, RoundResolved
+  src/mapping.ts              Event handlers → entities
+
+docs/superpowers/             Implementation plans + design specs
 ```
 
----
-
-## Running Locally (Start Here)
-
-Local dev uses a Hardhat node with MockUSDT. No real funds needed.
-The subgraph and oracle service are **not required** locally.
-
-### Prerequisites
-
-- Node.js 20+
-- MetaMask browser extension
-
-### Step 1 — Install dependencies
-
-```bash
-cd contracts && npm install
-cd ../frontend && npm install
-```
-
-### Step 2 — Run contract tests (optional but recommended)
-
-```bash
-cd contracts && npm test
-# Expected: 48 passing
-```
-
-### Step 3 — Start the local Hardhat node
-
-**Terminal 1** (keep running):
-
-```bash
-cd contracts && npm run node
-```
-
-### Step 4 — Deploy contracts locally
-
-**Terminal 2**:
-
-```bash
-cd contracts && npm run deploy:local
-```
-
-This deploys MockUSDT + MiniStreak + StreakOracle, mints 10,000 USDT to
-the first 5 test accounts, and **auto-writes `frontend/.env.local`**.
-
-> Every time you restart the Hardhat node, re-run `deploy:local` to get fresh addresses.
-
-### Step 5 — Configure MetaMask
-
-1. Add a custom network:
-   - **Network name:** Localhost 8545
-   - **RPC URL:** `http://127.0.0.1:8545`
-   - **Chain ID:** `31337`
-   - **Currency symbol:** ETH
-
-2. Import a test account (Account #3 — pre-funded):
-   ```
-   0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
-   ```
-
-### Step 6 — Start the frontend
-
-**Terminal 3**:
-
-```bash
-cd frontend && npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Step 7 — Resolve a round early (for testing)
-
-```bash
-cd contracts && npx hardhat console --network localhost
-```
-
-```js
-const vault = await ethers.getContractAt("MiniStreak", "0xYOUR_VAULT_ADDR")
-const roundId = await vault.getCurrentRoundId()
-await vault.resolveRound(roundId)  // deployer has KEEPER_ROLE
-```
-
----
-
-## Deploy to Celo Sepolia Testnet
-
-Celo Sepolia is Celo's primary developer testnet (chainId 11142220, replaces Alfajores).
-**Official USDT is already live on Celo Sepolia** — the deploy script uses it directly, no MockUSDT needed.
-
-### Requirements
-
-- CELO on Celo Sepolia for gas
-  → Faucet: [faucet.celo.org/celo-sepolia](https://faucet.celo.org/celo-sepolia)
-  → Google Cloud faucet: [cloud.google.com/application/web3/faucet/celo/sepolia](https://cloud.google.com/application/web3/faucet/celo/sepolia)
-- Block explorer: [celo-sepolia.blockscout.com](https://celo-sepolia.blockscout.com)
-
-### 1. Configure contracts
-
-```bash
-cd contracts
-cp .env.example .env
-```
-
-Fill in `.env`:
-
-```env
-DEPLOYER_PRIVATE_KEY=0xYOUR_WALLET_PRIVATE_KEY
-TREASURY_ADDRESS=0xYOUR_TREASURY_WALLET
-ORACLE_HOT_WALLET=0xYOUR_ORACLE_HOT_WALLET   # can be same as deployer initially
-CELO_SEPOLIA_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
-```
-
-### 2. Deploy contracts
-
-```bash
-npm run deploy:sepolia
-```
-
-The script:
-1. Uses the official USDT on Celo Sepolia: `0xd077A400968890Eacc75cdc901F0356c943e4fDb` (6 decimals)
-2. Deploys `MiniStreak` (with real USDT as game token)
-3. Deploys `StreakOracle`
-4. Grants `ORACLE_ROLE` to StreakOracle
-5. Saves deployment info to `contracts/deployments/celoSepolia.json`
-
-The output prints all three addresses. **Copy them.**
-
-### 3. Update constants.ts
-
-In `contracts/constants.ts`, fill in `DEPLOYED_ADDRESSES[11142220].vault` and `.oracle` with the output addresses.
-The USDT address (`0xd077A400968890Eacc75cdc901F0356c943e4fDb`) is already pre-filled.
-
-### 4. Verify contracts on Blockscout
-
-```bash
-npm run verify:sepolia
-```
-
-Verification on Blockscout does not require an API key for Celo Sepolia.
-
-### 5. Configure the frontend
-
-Create `frontend/.env.local`:
-
-```env
-NEXT_PUBLIC_CHAIN_ID=11142220
-NEXT_PUBLIC_CELO_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
-NEXT_PUBLIC_VAULT_ADDRESS=0xYOUR_VAULT_ADDRESS
-NEXT_PUBLIC_ORACLE_ADDRESS=0xYOUR_ORACLE_ADDRESS
-NEXT_PUBLIC_USDT_ADDRESS=0xd077A400968890Eacc75cdc901F0356c943e4fDb
-NEXT_PUBLIC_GRAPH_API_URL=
-NEXT_PUBLIC_CHARITY_ADDRESS=0x4C6Aa14F58aFb01CB0515aD33e03Ec16a67f4E55
-NEXT_TELEMETRY_DISABLED=1
-```
-
-### 6. Deploy the frontend to Vercel
-
-#### Option A — Vercel CLI
-
-```bash
-cd frontend
-npm i -g vercel
-vercel                   # follow prompts, connect to your GitHub repo
-vercel env add NEXT_PUBLIC_CHAIN_ID          # set each env var
-vercel env add NEXT_PUBLIC_VAULT_ADDRESS
-vercel env add NEXT_PUBLIC_ORACLE_ADDRESS
-vercel env add NEXT_PUBLIC_USDT_ADDRESS
-vercel env add NEXT_PUBLIC_CELO_RPC_URL
-vercel --prod            # deploy to production
-```
-
-#### Option B — Vercel Dashboard (recommended)
-
-1. Push this repo to GitHub
-2. Go to [vercel.com/new](https://vercel.com/new) → Import your GitHub repo
-3. Set **Root Directory** to `frontend`
-4. Add all `NEXT_PUBLIC_*` environment variables from the list above
-5. Deploy — Vercel auto-detects Next.js
-
-The `frontend/vercel.json` is pre-configured with the correct build settings.
-
-### 7. Configure the oracle service
-
-```bash
-cd oracle-service
-cp .env.example .env
-```
-
-Fill in `.env`:
-
-```env
-ORACLE_PRIVATE_KEY=0xYOUR_ORACLE_HOT_WALLET_PRIVATE_KEY
-CELO_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
-VAULT_ADDRESS=0xYOUR_VAULT_ADDRESS
-ORACLE_ADDRESS=0xYOUR_ORACLE_ADDRESS
-USDT_ADDRESS=0xd077A400968890Eacc75cdc901F0356c943e4fDb
-```
-
-Run the oracle:
-
-```bash
-npm install && npm run dev
-```
-
-Or containerised:
-
-```bash
-docker build -t celo-grind-oracle .
-docker run -v $(pwd)/data:/data --env-file .env celo-grind-oracle
-```
-
-### 8. (Optional) Deploy the subgraph
-
-```bash
-cd subgraph
-npm install -g @graphprotocol/graph-cli
-npm install
-```
-
-Edit `subgraph.yaml`:
-- Set `source.address` to your vault address
-- Set `source.startBlock` to the deployment block (from Blockscout)
-- Set `network` to `celo-sepolia` (if supported) or use hosted service
-
-```bash
-npm run codegen && npm run build && npm run deploy:studio
-```
-
-Update `NEXT_PUBLIC_GRAPH_API_URL` in your frontend env once deployed.
-
----
-
-## Smart Contract Addresses
-
-| Contract         | Network       | Address                                      |
-|------------------|---------------|----------------------------------------------|
-| MiniStreak       | Celo Sepolia  | `0x911BD7790a581831BbE544bC782cc78659ce41b8`  |
-| StreakOracle     | Celo Sepolia  | `0x6827D8155eF79a7f2d8eA87f8E64b04b3E6936D7`  |
-| USDT             | Celo Sepolia  | `0xd077A400968890Eacc75cdc901F0356c943e4fDb`  |
-| MiniStreak       | Mainnet       | *After audit + mainnet deploy*                |
-| StreakOracle     | Mainnet       | *After audit + mainnet deploy*                |
-| USDT             | Mainnet       | Verify official address before use            |
-
----
-
-## Game Rules
-
-| Rule             | Value                                   |
-|------------------|-----------------------------------------|
-| Entry fee        | 0.10 USDT                               |
-| Qualifying tx    | Any outgoing transaction (no self-sends) |
-| Round duration   | 7 days (Mon 00:00 — Sun 23:59 UTC)      |
-| Protocol fee     | 5%                                      |
-| 1st place prize  | 50% of distributable pot                |
-| 2nd place prize  | 30% of distributable pot                |
-| 3rd place prize  | 20% of distributable pot                |
-| Min players      | 3 (else full refund)                    |
-| Tiebreaker       | Highest cumulative USDT volume          |
-
----
-
-## How the Oracle Service Works
-
-1. **Cron runs every hour** via `node-cron`
-2. **Fetches current round** and all registered players from the vault contract
-3. **Scans all outgoing transactions** for each player via Blockscout API
-4. **Filters out self-sends** (`from !== to`), counts remaining txs for today UTC
-5. **Checks SQLite** to avoid resubmitting already-processed txns
-6. **Calls StreakOracle.submitStreak()** with the proof
-7. **Records the submission** in SQLite
-8. **Alerts via webhook** if oracle wallet CELO balance drops below threshold
-
----
-
-## MiniPay Integration
-
-- Detects MiniPay via `window.ethereum?.isMiniPay`
-- All wallet UI hidden when inside MiniPay (wallet is implicit)
-- All transactions use **legacy tx mode** (`gasPrice`, no EIP-1559)
-- Mobile-first, Tailwind CSS only, no external component libraries
-
-To submit for MiniPay listing: [minipay.to/mini-apps](https://minipay.to/mini-apps)
-
----
-
-## Environment Variables Reference
-
-### contracts/.env
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DEPLOYER_PRIVATE_KEY` | Yes | Wallet private key with 0x prefix. Must have CELO for gas. |
-| `TREASURY_ADDRESS` | No | Receives 5% protocol fee. Defaults to deployer. |
-| `ORACLE_HOT_WALLET` | No | Oracle submitter address. Defaults to deployer. |
-| `CELO_SEPOLIA_RPC_URL` | No | Defaults to `https://forno.celo-sepolia.celo-testnet.org` |
-| `USDT_ADDRESS` | No | Override USDT address. Auto-resolved per chain. |
-| `BLOCKSCOUT_API_KEY` | No | Placeholder is fine for Celo Sepolia Blockscout. |
-
-### frontend/.env.local
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NEXT_PUBLIC_CHAIN_ID` | Yes | `11142220` (Celo Sepolia) or `42220` (Mainnet) |
-| `NEXT_PUBLIC_CELO_RPC_URL` | No | RPC endpoint. Defaults per chain. |
-| `NEXT_PUBLIC_VAULT_ADDRESS` | Yes | MiniStreak contract address |
-| `NEXT_PUBLIC_ORACLE_ADDRESS` | Yes | StreakOracle contract address |
-| `NEXT_PUBLIC_USDT_ADDRESS` | Yes | USDT token address |
-| `NEXT_PUBLIC_GRAPH_API_URL` | No | The Graph subgraph endpoint. Leave empty for contract-only mode. |
-| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | No | WalletConnect project ID for non-MiniPay browsers. |
-| `NEXT_PUBLIC_CHARITY_ADDRESS` | No | Destination for TxShortcut streak transactions. |
-
-### oracle-service/.env
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `ORACLE_PRIVATE_KEY` | Yes | Hot wallet private key (0x prefix). Must have CELO for gas. |
-| `CELO_RPC_URL` | No | Defaults to Celo Sepolia RPC. |
-| `VAULT_ADDRESS` | Yes | MiniStreak contract address. |
-| `ORACLE_ADDRESS` | Yes | StreakOracle contract address. |
-| `DB_PATH` | No | SQLite database path. Default `./oracle.db`. |
-| `CRON_SCHEDULE` | No | Oracle run schedule. Default `0 * * * *` (hourly). |
-| `LOG_LEVEL` | No | `debug`, `info`, `warn`, or `error`. Default `info`. |
-| `WEBHOOK_ALERT_URL` | No | Slack/Discord webhook for low-balance alerts. |
-| `MIN_CELO_BALANCE` | No | Alert threshold in CELO. Default `0.1`. |
-
----
-
-## Testing on MiniPay (Dev Mode)
-
-1. Install MiniPay on your Android device (available on Google Play via Opera MiniPay)
-2. Enable **Developer Mode** in MiniPay settings
-3. In the dev tools, add your Vercel URL as a test dApp
-4. MiniPay auto-connects via `window.ethereum` — no wallet connection needed
-5. Ensure the frontend is deployed with `NEXT_PUBLIC_CHAIN_ID=11142220` (Celo Sepolia)
-6. Get testnet USDT from the faucet or have someone transfer USDT on Celo Sepolia
-
-**MiniPay-specific behaviors:**
-- Wallet connect/disconnect buttons are hidden (wallet is implicit)
-- All transactions use legacy tx mode (`gasPrice`, no EIP-1559)
-- UI is mobile-only (`max-w-md`, fixed bottom navigation)
-
----
-
-## Security Considerations
-
-- **Access Control**: `ORACLE_ROLE` held only by StreakOracle. `KEEPER_ROLE` for Chainlink. Owner holds `DEFAULT_ADMIN_ROLE`.
-- **Reentrancy**: All state-changing functions use `ReentrancyGuard`.
-- **Rate Limiting**: StreakOracle enforces 1 submission per (player, round, day), tracked on-chain and in SQLite.
-- **Pull over push**: Refunds use a pull pattern — players call `claimRefund()`.
-- **Oracle hot wallet**: Keep `ORACLE_PRIVATE_KEY` secure. Monitor balance for gas.
-- **Emergency stop**: Contract is `Pausable` — owner can pause in emergencies.
-- **Audit**: Smart contracts should be audited before mainnet launch.
+## Tech Stack
+
+- **Framework**: Next.js 14 (App Router, RSC where possible)
+- **Language**: TypeScript end-to-end (Solidity for contracts)
+- **Styling**: Tailwind CSS + CSS variables, custom utilities for pills/cards
+- **Fonts**: DM Sans (app), Fraunces (legal pages), JetBrains Mono (addresses)
+- **Wallet**: wagmi v2 + viem v2, injected for MiniPay, WalletConnect optional fallback
+- **Smart contracts**: Solidity 0.8.20, Hardhat 2.22, OpenZeppelin 5.x, `viaIR: true`
+- **Oracle**: Node + ethers v6, SQLite for de-duplication, node-cron for scheduling (or Vercel cron in production)
+- **Indexer**: The Graph (hosted), GraphQL queries from the frontend
+- **Chain**: Celo Mainnet (42220) / Celo Sepolia (11142220) — legacy tx mode required
+- **Deployment**: Vercel (frontend), self-hosted oracle or Vercel cron, The Graph Studio (subgraph)
+
+## Design
+
+- **Font**: DM Sans (400 / 500 / 600 / 700) across the app — Fraunces stays on `/terms` and `/privacy`
+- **Light theme** (no dark mode):
+  - Paper background `#FAF6EC` with a subtle dot-grain pattern
+  - Paper tint `#F3EDD8` for the pot hero, timer cells, and "How to play" card
+  - Ink `#1B1A17` primary, `#6B6452` secondary, `#A8A192` faint
+  - Forest green `#1B6B3F` for primary actions and active states; deep `#0F4A2A` on hover
+  - Trophy gold `#B8842B` for low-balance warnings and accent highlights
+  - Coral `#C44536` for error states
+- **Cards**: surface white with hairline `#E5DEC8` borders + soft warm shadow, or paper-tint variant for muted blocks
+- **Buttons**: rounded-full pills, full width, `inline-flex justify-center` so both `<button>` and `<a>` center identically
+- **Numbers**: tabular nums + tight letter-spacing for the pot, streak, and timer
+- **Layout**: 360-px-first, max-width 28rem centered, generous vertical rhythm
