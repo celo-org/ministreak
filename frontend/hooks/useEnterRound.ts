@@ -9,6 +9,7 @@ import {
   ERC20_ABI,
   ENTRY_FEE,
 } from "@/lib/contracts";
+import { BUILDER_SUFFIX } from "@/lib/builderCode";
 
 type Step = "idle" | "approving" | "entering" | "done" | "error";
 
@@ -67,6 +68,7 @@ export function useEnterRound() {
           gas: approveGas,
           gasPrice: gasPriceWithBuffer,
           type: "legacy" as const,
+          dataSuffix: BUILDER_SUFFIX,
         });
 
         await publicClient.waitForTransactionReceipt({ hash: approveTx });
@@ -92,6 +94,7 @@ export function useEnterRound() {
         gas: (enterGas * BigInt(130)) / BigInt(100), // 30% buffer for reentrancy guard
         gasPrice: gasPriceWithBuffer,
         type: "legacy" as const,
+        dataSuffix: BUILDER_SUFFIX,
       });
 
       await publicClient.waitForTransactionReceipt({ hash: enterTx });
