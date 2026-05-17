@@ -19,8 +19,7 @@ Players pay 0.10 USDT to enter a weekly round. Each day during the round they mu
 | Min players for payout | 3 (else auto-refund) |
 | Protocol fee | 5% of pot to treasury |
 | Payout split (3 winners) | 50 / 30 / 20 |
-| Payout split (2 winners, edge) | 62.5 / 37.5 |
-| Payout split (1 winner, edge) | 100 |
+
 
 ## Contracts
 

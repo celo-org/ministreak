@@ -8,7 +8,7 @@ Reference for the live contracts on Celo mainnet plus the off-chain oracle servi
 |---|---|---|
 | Celo Mainnet (42220) | MiniStreak | `0xcd125da0EC85c8414D39fa94011b607C2A5f17e5` |
 | Celo Mainnet (42220) | StreakOracle | `0x2c08420187F96a69E0aB64a1507282786E4f474e` |
-| Celo Mainnet (42220) | USDT | `0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e` |
+
 
 ## Game rules
 
@@ -23,8 +23,7 @@ Reference for the live contracts on Celo mainnet plus the off-chain oracle servi
 | Min players for payout | 3 (else refund) |
 | Protocol fee | 5% of pot to treasury |
 | Payout split (3 winners) | 50 / 30 / 20 |
-| Payout split (2 winners, edge) | 62.5 / 37.5 |
-| Payout split (1 winner, edge) | 100 |
+
 
 ## `MiniStreak.sol` — the vault
 
