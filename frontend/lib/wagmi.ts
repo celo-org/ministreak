@@ -4,7 +4,6 @@ import { createConfig, http } from "wagmi";
 import { injected, walletConnect } from "wagmi/connectors";
 import { celo } from "viem/chains";
 import { defineChain } from "viem";
-import { Attribution } from "ox/erc8021";
 
 // Celo Sepolia testnet (primary developer testnet, chain ID 11142220)
 const celoSepolia = defineChain({
@@ -55,9 +54,6 @@ const rpcUrl = (process.env.NEXT_PUBLIC_CELO_RPC_URL ||
 
 const wcProjectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
-
-// ERC-8021 builder code attribution suffix — applied to wallet clients via useAttributedWalletClient hook
-export const erc8021Suffix = Attribution.toDataSuffix({ codes: ['ministreak'] });
 
 export const wagmiConfig = createConfig({
   chains: [activeChain],

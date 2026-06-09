@@ -12,7 +12,18 @@ const nextConfig = {
       fs: false,
       net: false,
       tls: false,
+      ws: false,
     };
+    // Optional peer deps in @wagmi/connectors v8 — unused connectors, externalize
+    config.externals = [
+      ...(config.externals || []),
+      "porto",
+      "porto/internal",
+      "@metamask/connect-evm",
+      "@safe-global/safe-apps-sdk",
+      "@safe-global/safe-apps-provider",
+      "@coinbase/wallet-sdk",
+    ];
     return config;
   },
 };
