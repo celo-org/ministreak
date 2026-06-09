@@ -152,6 +152,37 @@ export const VAULT_ABI = [
     outputs: [{ name: "", type: "address" }],
   },
   {
+    name: "resolveRound",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "roundId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    name: "hasRole",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "role", type: "bytes32" },
+      { name: "account", type: "address" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    name: "KEEPER_ROLE",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes32" }],
+  },
+  {
+    name: "DEFAULT_ADMIN_ROLE",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes32" }],
+  },
+  {
     name: "ENTRY_FEE",
     type: "function",
     stateMutability: "view",

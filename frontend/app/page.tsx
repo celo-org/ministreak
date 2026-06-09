@@ -5,9 +5,13 @@ import { useCurrentRound } from "@/hooks/useCurrentRound";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { useTodayStreak } from "@/hooks/useTodayStreak";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePreviousRoundRefund } from "@/hooks/usePreviousRoundRefund";
 import StreakCard from "@/components/StreakCard";
 import RoundTimer from "@/components/RoundTimer";
 import EntryButton from "@/components/EntryButton";
+import ClaimRefundCard from "@/components/ClaimRefundCard";
+import ResolveRoundButton from "@/components/ResolveRoundButton";
 import Leaderboard from "@/components/Leaderboard";
 import WalletBadge from "@/components/WalletBadge";
 import LegalLinks from "@/components/Footer";
@@ -32,6 +36,13 @@ export default function HomePage() {
 
   const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(
     round?.roundId?.toString()
+  );
+
+  const { isAdmin } = useIsAdmin(address);
+
+  const { info: refundInfo, refetch: refetchRefund } = usePreviousRoundRefund(
+    round?.roundId,
+    address
   );
 
   return (
@@ -67,6 +78,14 @@ export default function HomePage() {
 
       {/* Round timer */}
       <RoundTimer endTime={round?.endTime} />
+
+      {/* Refund claim (previous round, only if claimable) */}
+      {isConnected && refundInfo.claimable && refundInfo.roundId !== null && (
+        <ClaimRefundCard
+          roundId={refundInfo.roundId}
+          onSuccess={refetchRefund}
+        />
+      )}
 
       {/* Streak card (if entered) */}
       {isConnected && stats?.entered && (
@@ -105,6 +124,14 @@ export default function HomePage() {
           <p className="text-ink-mute">Connect a wallet to enter this week.</p>
           <WalletBadge />
         </div>
+      )}
+
+      {/* Admin: resolve current round (visible only to KEEPER/ADMIN role holders) */}
+      {isConnected && isAdmin && round && (
+        <ResolveRoundButton
+          roundId={round.roundId}
+          onSuccess={refetchRound}
+        />
       )}
 
       {/* Top 5 leaderboard */}
