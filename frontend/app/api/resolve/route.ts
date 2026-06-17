@@ -23,6 +23,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { celo } from "viem/chains";
+import { CELO_RPC_URL } from "@/lib/contracts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Vercel Pro plan
@@ -49,8 +50,7 @@ export async function GET(request: Request) {
 
     // ─── Config from env ──────────────────────────────────────────────────────
     const vaultAddress = process.env.NEXT_PUBLIC_VAULT_ADDRESS as Address;
-    const rpcUrl =
-      process.env.NEXT_PUBLIC_CELO_RPC_URL || "https://forno.celo.org";
+    const rpcUrl = CELO_RPC_URL;
     // Keeper key holds KEEPER_ROLE; fall back to the oracle key (works when the
     // oracle wallet is also the deployer/admin).
     const privateKey = (process.env.KEEPER_PRIVATE_KEY ||

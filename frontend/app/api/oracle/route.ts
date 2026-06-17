@@ -19,6 +19,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { celo } from "viem/chains";
 import { getCurrentRound, scanAllPlayers } from "@/lib/oracle/scanner";
 import { checkAlreadySubmitted, batchSubmitStreaks } from "@/lib/oracle/submitter";
+import { CELO_RPC_URL } from "@/lib/contracts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Vercel Pro plan
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
   // ─── Config from env ───────────────────────────────────────────────────────
   const vaultAddress = process.env.NEXT_PUBLIC_VAULT_ADDRESS as Address;
   const oracleAddress = process.env.NEXT_PUBLIC_ORACLE_ADDRESS as Address;
-  const rpcUrl = process.env.NEXT_PUBLIC_CELO_RPC_URL || "https://forno.celo.org";
+  const rpcUrl = CELO_RPC_URL;
   const privateKey = process.env.ORACLE_PRIVATE_KEY as `0x${string}`;
   const apiKey = process.env.BLOCKSCOUT_API_KEY || "";
 
