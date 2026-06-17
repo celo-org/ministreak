@@ -4,6 +4,7 @@ import { createConfig, http } from "wagmi";
 import { injected, walletConnect } from "wagmi/connectors";
 import { celo } from "viem/chains";
 import { defineChain } from "viem";
+import { CHAIN_ID, CELO_RPC_URL } from "./contracts";
 
 // Celo Sepolia testnet (primary developer testnet, chain ID 11142220)
 const celoSepolia = defineChain({
@@ -31,26 +32,30 @@ const hardhatLocal = defineChain({
   },
 });
 
-// IMPORTANT: must use static string literal for Next.js to inline at build time
-const chainId = parseInt((process.env.NEXT_PUBLIC_CHAIN_ID ?? "11142220").trim());
+// Defaults to Celo mainnet (42220). Overridable via NEXT_PUBLIC_CHAIN_ID for
+// local dev / testnet. See lib/contracts.ts.
+const chainId = CHAIN_ID;
 
 function getActiveChain() {
   if (chainId === 42220)   return celo;
   if (chainId === 31337)   return hardhatLocal;
   if (chainId === 44787)   return celoSepolia; // legacy fallback
-  return celoSepolia; // default: Celo Sepolia
+  if (chainId === 11142220) return celoSepolia;
+  return celo; // default: Celo mainnet
 }
 
 const activeChain = getActiveChain();
 
-const rpcUrl = (process.env.NEXT_PUBLIC_CELO_RPC_URL || 
-  (chainId === 42220
-    ? "https://forno.celo.org"
-    : chainId === 31337
-    ? "http://127.0.0.1:8545"
+// Mainnet uses the shared CELO_RPC_URL constant (env-overridable). Testnet/local
+// keep their own defaults so dev still works when only NEXT_PUBLIC_CHAIN_ID is set.
+const rpcUrl =
+  chainId === 31337
+    ? (process.env.NEXT_PUBLIC_CELO_RPC_URL || "http://127.0.0.1:8545").trim()
     : chainId === 44787
-    ? "https://alfajores-forno.celo-testnet.org"
-    : "https://forno.celo-sepolia.celo-testnet.org")).trim();
+    ? (process.env.NEXT_PUBLIC_CELO_RPC_URL || "https://alfajores-forno.celo-testnet.org").trim()
+    : chainId === 11142220
+    ? (process.env.NEXT_PUBLIC_CELO_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org").trim()
+    : CELO_RPC_URL;
 
 const wcProjectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";

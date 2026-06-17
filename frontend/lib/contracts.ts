@@ -17,7 +17,18 @@ export const ORACLE_ADDRESS =
 
 export const USDT_ADDRESS =
   ((process.env.NEXT_PUBLIC_USDT_ADDRESS || "").trim() as `0x${string}`) ||
-  "0x0000000000000000000000000000000000000000";
+  "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"; // Celo mainnet USDT (6 decimals)
+
+/**
+ * Network constants. These default to Celo mainnet so the app works without
+ * any env vars set on Vercel. An env var still overrides the default, which
+ * keeps local dev / testnet usable (e.g. NEXT_PUBLIC_CHAIN_ID=11142220).
+ */
+export const CHAIN_ID =
+  Number((process.env.NEXT_PUBLIC_CHAIN_ID || "").trim()) || 42220;
+
+export const CELO_RPC_URL =
+  (process.env.NEXT_PUBLIC_CELO_RPC_URL || "").trim() || "https://forno.celo.org";
 
 /**
  * Celo mainnet stablecoin addresses for the "swap to USDT" explainer.
