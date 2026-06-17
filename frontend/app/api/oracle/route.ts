@@ -1,7 +1,9 @@
 /**
  * GET /api/oracle
  * Vercel Cron handler — scans players and submits qualifying streaks.
- * Triggered daily at 11 PM UTC by Vercel Cron.
+ * Triggered hourly by Vercel Cron. Idempotent: already-submitted streaks
+ * are filtered out via an on-chain multicall, so re-running within a day
+ * only picks up players who newly qualified.
  */
 
 import { NextResponse } from "next/server";
@@ -19,7 +21,7 @@ import { getCurrentRound, scanAllPlayers } from "@/lib/oracle/scanner";
 import { checkAlreadySubmitted, batchSubmitStreaks } from "@/lib/oracle/submitter";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 10; // Vercel free plan limit
+export const maxDuration = 60; // Vercel Pro plan
 
 export async function GET(request: Request) {
   try {
