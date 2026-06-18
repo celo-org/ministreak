@@ -16,6 +16,12 @@ oracle-service/oracle.json
 frontend/.next/
 frontend/out/
 
+# Test coverage
+coverage/
+frontend/coverage/
+contracts/coverage/
+contracts/coverage.json
+
 # Subgraph
 subgraph/build/
 subgraph/generated/
