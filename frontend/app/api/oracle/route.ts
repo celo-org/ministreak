@@ -105,7 +105,7 @@ export async function GET(request: Request) {
     console.log("Oracle: checking on-chain submission status...");
     const submitted = await checkAlreadySubmitted(publicClient as unknown as PublicClient, oracleAddress, qualifying);
     const unsubmitted = qualifying.filter(
-      (q) => !submitted.has(`${q.player.toLowerCase()}:${q.dayIndex}`)
+      (q) => !submitted.has(`${q.player.toLowerCase()}:${q.roundId}:${q.dayIndex}`)
     );
 
     console.log(`Oracle: ${submitted.size} already submitted, ${unsubmitted.length} new`);

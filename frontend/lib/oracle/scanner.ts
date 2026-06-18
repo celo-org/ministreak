@@ -43,7 +43,7 @@ const BLOCKSCOUT_API = "https://celo.blockscout.com/api/v2";
  * Returns the UTC day boundaries for each day from round start through today.
  * Each entry: { dayIndex, start (unix seconds), end (unix seconds) }
  */
-function getRoundDayWindows(roundStartTime: bigint): Array<{
+export function getRoundDayWindows(roundStartTime: bigint): Array<{
   dayIndex: number;
   start: number;
   end: number;
@@ -159,7 +159,7 @@ async function fetchOutgoingTxsSince(
  * Bucket txs into day windows and produce a QualifyingTx per day that has
  * valid outgoing (non-self-send) transactions.
  */
-function analyzePlayerTxsByDay(
+export function analyzePlayerTxsByDay(
   player: Address,
   txs: Array<{ to: string | null; timestamp: number }>,
   roundInfo: RoundInfo,
