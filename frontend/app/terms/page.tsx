@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — MiniStreak",
+  title: "Terms of Use — MiniStreak",
 };
 
 type Block =
@@ -298,10 +298,10 @@ export default function TermsPage() {
       <header>
         <p className="eyebrow text-forest">Legal</p>
         <h1 className="font-display font-black text-4xl text-ink mt-1">
-          Terms of Service
+          Terms of Use
         </h1>
         <p className="text-ink-mute text-sm mt-2">
-          Celo Mini Apps Terms and Conditions · MiniStreak · Effective {EFFECTIVE_DATE}
+          MiniStreak Terms of Use · Effective {EFFECTIVE_DATE}
         </p>
         <p className="text-ink-mute text-sm mt-1">
           These Terms incorporate our{" "}

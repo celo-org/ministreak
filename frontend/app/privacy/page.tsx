@@ -243,7 +243,7 @@ export default function PrivacyPage() {
         <p className="text-ink-mute text-sm mt-1">
           This Policy works alongside our{" "}
           <Link href="/terms" className="text-forest underline underline-offset-4">
-            Terms of Service
+            Terms of Use
           </Link>
           .
         </p>
