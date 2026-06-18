@@ -10,6 +10,7 @@ contracts/typechain-types/
 
 # Oracle
 oracle-service/oracle.db
+oracle-service/oracle.json
 
 # Next.js
 frontend/.next/
@@ -23,6 +24,11 @@ subgraph/generated/
 .vscode/
 .idea/
 
+# OS
+.DS_Store
+**/.DS_Store
+
 # Claude/Agents
 .claude/
 .agents/
+.superpowers/
