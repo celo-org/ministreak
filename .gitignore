@@ -22,6 +22,9 @@ frontend/coverage/
 contracts/coverage/
 contracts/coverage.json
 
+# Sensitive ops docs — never commit
+docs/key_rotation.md
+
 # Subgraph
 subgraph/build/
 subgraph/generated/
