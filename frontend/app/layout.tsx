@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "MiniStreak — Weekly Streak Leaderboard",
   description:
     "Compete in weekly on-chain transaction streak competitions on Celo. Build your streak, climb the leaderboard, win USDT.",
-  metadataBase: new URL("https://frontend-roan-phi-84.vercel.app"),
+  metadataBase: new URL("https://www.ministreak.app"),
   icons: {
     icon: "/Favicon_Color.svg",
   },
