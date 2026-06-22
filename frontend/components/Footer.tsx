@@ -4,10 +4,11 @@ import Link from "next/link";
  * Inline legal/support links. Rendered directly inside the page content
  * (no global divider, no fixed positioning) to keep the page airy.
  *
- * TODO before MiniPay submission: replace SUPPORT_HREF with a real channel
- * (mailto, Telegram, WhatsApp, or web support portal).
+ * Support routes to a Google Form support intake (web support portal),
+ * satisfying the MiniPay in-app support requirement (§6).
  */
-const SUPPORT_HREF = "mailto:support@example.com"; // TODO: real channel
+const SUPPORT_HREF =
+  "https://docs.google.com/forms/d/e/1FAIpQLSc0Npx2Fn3CWBWbaXgHk8SGoxkCKUuzryizSbMPpu9FU5lJWQ/viewform";
 
 export default function LegalLinks() {
   return (
