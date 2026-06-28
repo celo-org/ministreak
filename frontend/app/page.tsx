@@ -51,30 +51,45 @@ export default function HomePage() {
       <header className="space-y-0.5">
         <div className="flex items-center justify-between gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/Logo_Color.svg" alt="MiniStreak" className="h-[25px] w-auto" />
+          <img
+            src="/Logo_Color.svg"
+            alt="MiniStreak"
+            width={136}
+            height={25}
+            className="h-[25px] w-auto"
+          />
           <WalletBadge />
         </div>
         <p className="eyebrow text-forest">Weekly streak game</p>
       </header>
 
-      {/* Hero — round pot */}
-      {round && (
-        <section className="rounded-2xl p-6 bg-paper-tint border border-rule">
-          <p className="eyebrow">
-            Round #{round.roundId.toString()} {round.isOpen ? "· Open" : "· Closed"}
-          </p>
-          <p className="display-xl num mt-1">
-            <span className="text-ink">{round.potFormatted}</span>
-            <span className="ml-2 font-sans font-medium text-2xl align-top text-ink-mute">
-              USDT
-            </span>
-          </p>
-          <p className="text-ink-mute text-sm mt-2">
-            {round.playerCount.toString()}{" "}
-            {Number(round.playerCount) === 1 ? "player" : "players"} in the pot
-          </p>
-        </section>
-      )}
+      {/* Hero — round pot. Always render the container with a stable min-height
+          so the async on-chain read doesn't shift the layout below it (CLS). */}
+      <section className="rounded-2xl p-6 bg-paper-tint border border-rule min-h-[172px]">
+        {round ? (
+          <>
+            <p className="eyebrow">
+              Round #{round.roundId.toString()} {round.isOpen ? "· Open" : "· Closed"}
+            </p>
+            <p className="display-xl num mt-1">
+              <span className="text-ink">{round.potFormatted}</span>
+              <span className="ml-2 font-sans font-medium text-2xl align-top text-ink-mute">
+                USDT
+              </span>
+            </p>
+            <p className="text-ink-mute text-sm mt-2">
+              {round.playerCount.toString()}{" "}
+              {Number(round.playerCount) === 1 ? "player" : "players"} in the pot
+            </p>
+          </>
+        ) : (
+          <div className="animate-pulse space-y-3" aria-hidden>
+            <div className="h-3 w-24 rounded bg-paper-deep" />
+            <div className="h-14 w-44 rounded bg-paper-deep" />
+            <div className="h-3 w-32 rounded bg-paper-deep" />
+          </div>
+        )}
+      </section>
 
       {/* Round timer */}
       <RoundTimer endTime={round?.endTime} />
