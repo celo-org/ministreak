@@ -39,7 +39,7 @@ const config: HardhatUserConfig = {
       url: process.env.CELO_RPC_URL || "https://forno.celo.org",
       chainId: 42220,
       accounts: [DEPLOYER_PRIVATE_KEY],
-      gasPrice: 5_000_000_000,
+      gasPrice: 300_000_000_000, // 300 gwei — headroom over ~200 gwei mainnet base fee (2026-06)
     },
     // Local Hardhat network for testing
     hardhat: {
