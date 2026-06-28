@@ -15,12 +15,22 @@ export const metadata: Metadata = {
     "Compete in weekly on-chain transaction streak competitions on Celo. Build your streak, climb the leaderboard, win USDT.",
   metadataBase: new URL("https://www.ministreak.app"),
   icons: {
-    icon: "/Favicon_Color.svg",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/Favicon_Color.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
   openGraph: {
     title: "MiniStreak",
     description: "Weekly transaction streak leaderboard on Celo",
     type: "website",
+    images: [
+      { url: "/og-image.webp", width: 1200, height: 630, type: "image/webp" },
+      { url: "/og-image.png", width: 1200, height: 630, type: "image/png" },
+    ],
   },
 };
 
