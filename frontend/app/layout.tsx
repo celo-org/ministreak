@@ -64,6 +64,12 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
     >
+      <head>
+        {/* The LCP element (round pot) waits on a JSON-RPC read to the Celo
+            node, so warm the connection early — saves ~300ms on LCP. */}
+        <link rel="preconnect" href="https://forno.celo.org" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://forno.celo.org" />
+      </head>
       <body className="min-h-screen">
         <Providers>
           <div className="max-w-md mx-auto px-5 pb-28">{children}</div>
