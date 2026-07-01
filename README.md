@@ -11,7 +11,7 @@ Live demo: [ministreak-fe.vercel.app](https://ministreak-fe.vercel.app) · Repos
 1. **Open in MiniPay** — the app auto-connects your wallet. No "Connect Wallet" button, no signatures.
 2. **Enter the round** — pay 0.10 USDT to join this week's pot. Weekly rounds run Monday 00:00 → Sunday 23:59 UTC.
 3. **Build your streak** — send any outgoing transaction each day (not a self-send). The oracle picks it up and extends your streak.
-4. **Climb the board** — ranked by longest streak, then tx count, then unique recipients. Ties broken by cumulative USDT volume.
+4. **Climb the board** — ranked by longest streak, then tx count, then unique recipients.
 5. **Miss a day, you're out** — streak resets to zero. Show back up the next round.
 6. **Round resolves** — winners split the pot 50 / 30 / 20 (minus a 5% protocol fee). Fewer than 3 players? All entry fees are refunded automatically.
 

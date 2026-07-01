@@ -5,6 +5,7 @@ import { usePublicClient, useAccount, useConfig } from "wagmi";
 import { getWalletClient } from "@wagmi/core";
 import { VAULT_ADDRESS, VAULT_ABI } from "@/lib/contracts";
 import { activeChain } from "@/lib/wagmi";
+import { BUILDER_SUFFIX } from "@/lib/builderCode";
 
 type Step = "idle" | "claiming" | "done" | "error";
 
@@ -52,6 +53,7 @@ export function useClaimRefund() {
         gas: (estGas * BigInt(130)) / BigInt(100),
         gasPrice: gasPriceWithBuffer,
         type: "legacy" as const,
+        dataSuffix: BUILDER_SUFFIX,
       });
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
