@@ -11,9 +11,7 @@ import {
   ENTRY_FEE,
 } from "@/lib/contracts";
 import { activeChain } from "@/lib/wagmi";
-// TEMP: BUILDER_SUFFIX import suspended for gas comparison. Re-enable with the
-// dataSuffix lines in the writeContract calls below.
-// import { BUILDER_SUFFIX } from "@/lib/builderCode";
+import { BUILDER_SUFFIX } from "@/lib/builderCode";
 
 type Step = "idle" | "approving" | "entering" | "done" | "error";
 
@@ -86,7 +84,7 @@ export function useEnterRound() {
           gas: (approveGas * BigInt(150)) / BigInt(100),
           gasPrice: gasPriceWithBuffer,
           type: "legacy" as const,
-          // dataSuffix: BUILDER_SUFFIX, // TEMP: suspended for gas comparison
+          dataSuffix: BUILDER_SUFFIX,
         });
 
         const approveReceipt = await publicClient.waitForTransactionReceipt({
@@ -121,7 +119,7 @@ export function useEnterRound() {
         gas: (enterGas * BigInt(130)) / BigInt(100), // 30% buffer for reentrancy guard
         gasPrice: gasPriceWithBuffer,
         type: "legacy" as const,
-        // dataSuffix: BUILDER_SUFFIX, // TEMP: suspended for gas comparison
+        dataSuffix: BUILDER_SUFFIX,
       });
 
       await publicClient.waitForTransactionReceipt({ hash: enterTx });
