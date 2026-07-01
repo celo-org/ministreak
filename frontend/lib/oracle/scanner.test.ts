@@ -46,6 +46,18 @@ describe("getRoundDayWindows", () => {
     const future = BigInt(Math.floor(NOW_MS / 1000) + 10 * DAY);
     expect(getRoundDayWindows(future)).toEqual([]);
   });
+
+  it("includes day 0 when the round started mid-day today (drifted, non-midnight start)", () => {
+    // Regression: round starts at 09:00Z today, 'now' is 12:00Z the same day.
+    // The old midnight-aligned logic produced zero windows here, so the entry
+    // day never got scanned and streaks stayed 0.
+    const midDayStart = BigInt(Math.floor(Date.UTC(2026, 0, 8, 9, 0, 0) / 1000));
+    const windows = getRoundDayWindows(midDayStart);
+    expect(windows.map((w) => w.dayIndex)).toEqual([0]);
+    // Window is aligned to the actual start, not to midnight.
+    expect(windows[0].start).toBe(Number(midDayStart));
+    expect(windows[0].end).toBe(Number(midDayStart) + DAY - 1);
+  });
 });
 
 describe("analyzePlayerTxsByDay", () => {
