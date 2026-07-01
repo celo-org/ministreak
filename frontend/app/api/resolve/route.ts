@@ -21,8 +21,10 @@ import {
   parseAbi,
   type Address,
 } from "viem";
+import type { PublicClient, WalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { celo } from "viem/chains";
+import { runOracleScan } from "@/lib/oracle/run";
 import { CELO_RPC_URL } from "@/lib/contracts";
 
 export const dynamic = "force-dynamic";
@@ -116,6 +118,40 @@ export async function GET(request: Request) {
         round: Number(roundId),
         status,
       });
+    }
+
+    // ─── Final oracle scan before resolving ───────────────────────────────────
+    // The round is about to resolve, so submit any last-minute streaks first.
+    // This closes the gap where endTime drifts into the oracle/resolve window
+    // or the boundary oracle run failed, leaving the final day unsubmitted.
+    // Best-effort: a scan failure is logged but does NOT block resolution — the
+    // bulk of the week's streaks are already on-chain, and locking the round
+    // (so entry fees can't be distributed/refunded) is worse than resolving on
+    // a possibly-incomplete final day. Skipped when the oracle env is absent
+    // (e.g. tests), and uses the oracle key (trustedSubmitter) for the scan.
+    const oracleAddress = process.env.NEXT_PUBLIC_ORACLE_ADDRESS as Address;
+    const oraclePrivateKey = process.env.ORACLE_PRIVATE_KEY as `0x${string}` | undefined;
+    const apiKey = process.env.BLOCKSCOUT_API_KEY || "";
+
+    if (oracleAddress && oraclePrivateKey) {
+      try {
+        console.log("Resolve: running final oracle scan before resolving...");
+        const oracleAccount = privateKeyToAccount(oraclePrivateKey);
+        const oracleWallet = createWalletClient({
+          account: oracleAccount,
+          chain: celo,
+          transport: http(rpcUrl),
+        });
+        const scan = await runOracleScan(
+          publicClient as unknown as PublicClient,
+          oracleWallet as unknown as WalletClient,
+          { vaultAddress, oracleAddress, apiKey }
+        );
+        console.log(`Resolve: final scan submitted ${scan.streaksSubmitted} streak(s).`);
+      } catch (scanErr) {
+        const m = scanErr instanceof Error ? scanErr.message : String(scanErr);
+        console.warn(`Resolve: final oracle scan failed (proceeding anyway): ${m}`);
+      }
     }
 
     // ─── Resolve ──────────────────────────────────────────────────────────────
