@@ -40,8 +40,15 @@ const VAULT_ABI = parseAbi([
 const BLOCKSCOUT_API = "https://celo.blockscout.com/api/v2";
 
 /**
- * Returns the UTC day boundaries for each day from round start through today.
- * Each entry: { dayIndex, start (unix seconds), end (unix seconds) }
+ * Returns the day windows (24h periods) from round start through the current
+ * day. Each entry: { dayIndex, start (unix seconds), end (unix seconds) }.
+ *
+ * Windows are measured from the round's ACTUAL startTime, not from UTC
+ * midnight. Rounds do not always start at midnight — `startTime` is the
+ * previous round's resolution timestamp, which drifts — so aligning to
+ * midnight orphaned the (partial) start day and produced zero windows while
+ * the start day was still in progress, meaning no streaks were ever recorded
+ * for the day players entered. day 0 = [startTime, startTime + 24h), etc.
  */
 export function getRoundDayWindows(roundStartTime: bigint): Array<{
   dayIndex: number;
@@ -49,27 +56,16 @@ export function getRoundDayWindows(roundStartTime: bigint): Array<{
   end: number;
 }> {
   const roundStart = Number(roundStartTime);
-  // First full UTC day at or after round start
-  const firstDayStart = Math.ceil(roundStart / 86400) * 86400;
-  // If round started exactly at midnight, use that; otherwise next midnight
-  const effectiveFirstDay =
-    roundStart % 86400 === 0 ? roundStart : firstDayStart;
-
   const now = Math.floor(Date.now() / 1000);
-  const todayStart = Math.floor(now / 86400) * 86400;
+
+  // Which day of the round are we currently in (0-based). Negative if the
+  // round hasn't started yet.
+  const currentDayIndex = Math.floor((now - roundStart) / 86400);
 
   const windows: Array<{ dayIndex: number; start: number; end: number }> = [];
-
-  // Day 0 starts at round start time, ends at first UTC midnight
-  // But we align day boundaries to UTC days for Blockscout filtering
-  for (let dayStart = effectiveFirstDay; dayStart <= todayStart; dayStart += 86400) {
-    const dayIndex = Math.floor((dayStart - roundStart) / 86400);
-    if (dayIndex < 0 || dayIndex > 6) continue;
-    windows.push({
-      dayIndex,
-      start: dayStart,
-      end: dayStart + 86399,
-    });
+  for (let dayIndex = 0; dayIndex <= Math.min(currentDayIndex, 6); dayIndex++) {
+    const start = roundStart + dayIndex * 86400;
+    windows.push({ dayIndex, start, end: start + 86400 - 1 });
   }
 
   return windows;
