@@ -27,7 +27,7 @@ Derived from the source (`frontend/lib`, `frontend/hooks`, `frontend/app`).
 | Origin | Purpose | Where |
 |--------|---------|-------|
 | `https://forno.celo.org` | RPC for oracle / resolve / health crons | `/api/oracle`, `/api/resolve`, `/api/health` |
-| `https://celo.blockscout.com/api/v2` | Reads USDT transfer history to compute streaks | `lib/oracle/scanner.ts` |
+| `https://celo.blockscout.com/api/v2` | Reads a player's outgoing transaction history to compute streaks | `lib/oracle/scanner.ts` |
 
 ## Not contacted in production
 
