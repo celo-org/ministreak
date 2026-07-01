@@ -36,7 +36,7 @@ The on-chain layer is two contracts (no proxies, no upgradeability — fixed onc
 - **Token**: USDT (6 decimals). Unowned-pixel-style payment? No — flat 0.10 USDT entry, vault custodies the pot.
 - **Round**: 7 days, Monday 00:00 → Sunday 23:59 UTC. New round opens automatically.
 - **Payout**: 50 / 30 / 20 of the distributable pot, after a 5% protocol fee to the treasury.
-- **Tiebreaker**: cumulative USDT volume across qualifying daily transactions.
+- **Tiebreaker**: equal streaks are ranked by tx count, then unique recipients.
 
 **Mainnet (Celo, chain ID 42220)**
 
