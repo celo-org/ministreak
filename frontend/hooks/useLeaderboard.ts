@@ -69,12 +69,18 @@ export function useLeaderboard(roundId: string | undefined) {
   // Build round info from on-chain data
   let roundInfo = undefined;
   if (roundData) {
-    const [, , pot, status, playerCount] = roundData as [bigint, bigint, bigint, number, bigint];
+    const [, endTime, pot, status, playerCount] = roundData as [bigint, bigint, bigint, number, bigint];
     const statusLabels = ["Open", "Closed", "Resolved", "Refunded"];
+    // The contract leaves status = Open (0) after endTime until the round is
+    // resolved (Closed(1) is only transient mid-resolution). Surface "Closed"
+    // once the round has ended, to match the home page's isOpen logic.
+    const ended = Math.floor(Date.now() / 1000) >= Number(endTime);
+    const displayStatus =
+      status === 0 && ended ? "Closed" : statusLabels[status] || "Unknown";
     roundInfo = {
       pot: parseFloat(formatUnits(pot, 6)).toFixed(2),
       playerCount: Number(playerCount).toString(),
-      status: statusLabels[status] || "Unknown",
+      status: displayStatus,
     };
   }
 
