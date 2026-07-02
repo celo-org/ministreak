@@ -5,6 +5,7 @@ import { WagmiProvider } from "wagmi";
 import { wagmiConfig } from "@/lib/wagmi";
 import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
+import { PostHogProvider } from "./PostHogProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,8 +24,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        {children}
-        <BottomNav />
+        <PostHogProvider>
+          {children}
+          <BottomNav />
+        </PostHogProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

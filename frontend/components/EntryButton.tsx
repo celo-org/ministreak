@@ -3,6 +3,7 @@
 import { useEnterRound } from "@/hooks/useEnterRound";
 import { useEntryEligibility } from "@/hooks/useEntryEligibility";
 import { MINIPAY_DEPOSIT_DEEPLINK } from "@/lib/contracts";
+import { capture } from "@/lib/analytics";
 
 interface EntryButtonProps {
   roundId: bigint | undefined;
@@ -77,6 +78,7 @@ export default function EntryButton({
           target="_blank"
           rel="noopener noreferrer"
           className="btn-primary"
+          onClick={() => capture("deposit_deeplink_clicked", { reason: "swap_needed" })}
         >
           Get USDT
         </a>
@@ -98,6 +100,7 @@ export default function EntryButton({
           target="_blank"
           rel="noopener noreferrer"
           className="btn-primary"
+          onClick={() => capture("deposit_deeplink_clicked", { reason: "deposit_needed" })}
         >
           Deposit USDT
         </a>

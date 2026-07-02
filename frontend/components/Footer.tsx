@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { capture } from "@/lib/analytics";
 
 /**
  * Inline legal/support links. Rendered directly inside the page content
@@ -26,6 +29,7 @@ export default function LegalLinks() {
         target="_blank"
         rel="noopener noreferrer"
         className="hover:text-forest transition-colors underline-offset-4 hover:underline"
+        onClick={() => capture("support_opened")}
       >
         Support
       </a>

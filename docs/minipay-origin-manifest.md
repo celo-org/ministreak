@@ -14,6 +14,7 @@ Derived from the source (`frontend/lib`, `frontend/hooks`, `frontend/app`).
 | `https://www.ministreak.app` | First-party app: HTML, JS/CSS chunks, self-hosted fonts (`/_next/static/media/*.woff2`), `/api/*` routes | First-party | — |
 | `https://forno.celo.org` | Celo L2 JSON-RPC — on-chain reads (round / pot / streak) and transaction submission | RPC | `NEXT_PUBLIC_CELO_RPC_URL` |
 | `https://api.studio.thegraph.com` | The Graph subgraph — leaderboard / streak-history queries | API (GraphQL) | `NEXT_PUBLIC_GRAPH_API_URL` |
+| `https://us.i.posthog.com` | Product analytics (PostHog, US cloud) — anonymous events only, no wallet address | Analytics | `NEXT_PUBLIC_POSTHOG_HOST` |
 
 ## B. Browser — user-initiated navigations (opened on tap, not background)
 
