@@ -25,6 +25,7 @@ export interface RoundInfo {
   startTime: bigint;
   endTime: bigint;
   players: Address[];
+  vaultAddress: Address;
 }
 
 // ─── ABIs ────────────────────────────────────────────────────────────────────
@@ -97,7 +98,7 @@ export async function getCurrentRound(
     args: [roundId],
   })) as Address[];
 
-  return { roundId, startTime, endTime, players };
+  return { roundId, startTime, endTime, players, vaultAddress };
 }
 
 // ─── Blockscout Scanning ─────────────────────────────────────────────────────
@@ -110,8 +111,8 @@ async function fetchOutgoingTxsSince(
   address: Address,
   sinceTimestamp: number,
   apiKey: string
-): Promise<Array<{ to: string | null; timestamp: number }>> {
-  const txs: Array<{ to: string | null; timestamp: number }> = [];
+): Promise<Array<{ to: string | null; timestamp: number; method: string | null }>> {
+  const txs: Array<{ to: string | null; timestamp: number; method: string | null }> = [];
   let nextPageParams: string | null = null;
 
   while (true) {
@@ -127,7 +128,7 @@ async function fetchOutgoingTxsSince(
     }
 
     const data: {
-      items: Array<{ timestamp: string; to?: { hash: string } }>;
+      items: Array<{ timestamp: string; to?: { hash: string }; method?: string | null }>;
       next_page_params?: { block_number: string; index: number };
     } = await res.json();
 
@@ -140,7 +141,7 @@ async function fetchOutgoingTxsSince(
         foundOlder = true;
         break;
       }
-      txs.push({ to: item.to?.hash || null, timestamp: ts });
+      txs.push({ to: item.to?.hash || null, timestamp: ts, method: item.method ?? null });
     }
 
     if (foundOlder || !data.next_page_params) break;
@@ -152,28 +153,54 @@ async function fetchOutgoingTxsSince(
 }
 
 /**
- * Bucket txs into day windows and produce a QualifyingTx per day that has
- * valid outgoing (non-self-send) transactions.
+ * Bucket txs into day windows and produce a QualifyingTx per day.
+ *
+ * txCount counts only outgoing (non-self-send) txs *strictly after* the
+ * player's entry. The entry itself is already counted on-chain (enterRound
+ * sets txCount = 1), so pre-entry txs — the ERC-20 `approve`, and any
+ * prior-round `claimRefund` that lands in the entry-day window — are excluded
+ * and the entry isn't double-counted. The entry is detected as the
+ * `enterRound` tx to the vault.
+ *
+ * The entry day always yields a QualifyingTx (even with 0 post-entry txs) so
+ * it still counts toward the streak — entering is the day's activity.
+ *
+ * If no entry tx is found (defensive fallback), the old behaviour applies:
+ * count every in-window tx.
  */
 export function analyzePlayerTxsByDay(
   player: Address,
-  txs: Array<{ to: string | null; timestamp: number }>,
+  txs: Array<{ to: string | null; timestamp: number; method?: string | null }>,
   roundInfo: RoundInfo,
   dayWindows: Array<{ dayIndex: number; start: number; end: number }>
 ): QualifyingTx[] {
+  const vault = roundInfo.vaultAddress.toLowerCase();
+  const entryTx = txs.find(
+    (tx) => tx.method === "enterRound" && tx.to?.toLowerCase() === vault
+  );
+  const hasEntry = entryTx !== undefined;
+  const entryTime = entryTx ? entryTx.timestamp : -Infinity;
+  const entryDayIndex = hasEntry
+    ? dayWindows.find((w) => entryTime >= w.start && entryTime <= w.end)?.dayIndex
+    : undefined;
+
   const results: QualifyingTx[] = [];
 
   for (const { dayIndex, start, end } of dayWindows) {
-    // Txs in this day window, excluding self-sends
-    const dayTxs = txs.filter(
+    const inWindow = txs.filter(
       (tx) =>
         tx.timestamp >= start &&
         tx.timestamp <= end &&
         tx.to &&
         tx.to.toLowerCase() !== player.toLowerCase()
     );
+    // Only txs strictly after entry count (entry already counted on-chain).
+    const dayTxs = hasEntry
+      ? inWindow.filter((tx) => tx.timestamp > entryTime)
+      : inWindow;
 
-    if (dayTxs.length === 0) continue;
+    const isEntryDay = hasEntry && dayIndex === entryDayIndex;
+    if (dayTxs.length === 0 && !isEntryDay) continue;
 
     const uniqueToAddresses = new Set<string>();
     for (const tx of dayTxs) {

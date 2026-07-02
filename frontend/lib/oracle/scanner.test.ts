@@ -12,6 +12,7 @@ const DAY = 86400;
 // 2026-01-08T12:00:00Z (a Thursday), well inside a round that started Monday.
 const NOW_MS = Date.UTC(2026, 0, 8, 12, 0, 0);
 const ROUND_START = BigInt(Math.floor(Date.UTC(2026, 0, 5, 0, 0, 0) / 1000)); // Mon 2026-01-05 00:00Z
+const VAULT = "0x000000000000000000000000000000000000ba5e" as const;
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -67,6 +68,7 @@ describe("analyzePlayerTxsByDay", () => {
     startTime: ROUND_START,
     endTime: ROUND_START + BigInt(7 * DAY),
     players: [player],
+    vaultAddress: VAULT,
   };
   const windows = [
     { dayIndex: 0, start: Number(ROUND_START), end: Number(ROUND_START) + DAY - 1 },
@@ -115,6 +117,28 @@ describe("analyzePlayerTxsByDay", () => {
     const txs = [{ to: "0xAAAA000000000000000000000000000000000000", timestamp: windows[1].end + 10_000 }];
     expect(analyzePlayerTxsByDay(player, txs, roundInfo, windows)).toEqual([]);
   });
+
+  it("counts only txs after entry — excludes approve, prior-round claims, and the entry itself", () => {
+    const s = windows[0].start;
+    const txs = [
+      { to: VAULT, timestamp: s + 5, method: "claimRefund" }, // prior round -> excluded
+      { to: "0xUSDT000000000000000000000000000000000000", timestamp: s + 8, method: "approve" }, // pre-entry -> excluded
+      { to: VAULT, timestamp: s + 10, method: "enterRound" }, // entry (counted on-chain, not here)
+      { to: "0xAAAA000000000000000000000000000000000000", timestamp: s + 20, method: "transfer" }, // post-entry -> counts
+    ];
+    const result = analyzePlayerTxsByDay(player, txs, roundInfo, windows);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ dayIndex: 0, txCount: 1, uniqueToCount: 1 });
+  });
+
+  it("entry day still qualifies for streak with zero post-entry txs (txCount 0)", () => {
+    const txs = [
+      { to: VAULT, timestamp: windows[0].start + 10, method: "enterRound" },
+    ];
+    const result = analyzePlayerTxsByDay(player, txs, roundInfo, windows);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ dayIndex: 0, txCount: 0, uniqueToCount: 0 });
+  });
 });
 
 describe("scanAllPlayers (integration over mocked Blockscout fetch)", () => {
@@ -124,6 +148,7 @@ describe("scanAllPlayers (integration over mocked Blockscout fetch)", () => {
     startTime: ROUND_START,
     endTime: ROUND_START + BigInt(7 * DAY),
     players: [player],
+    vaultAddress: VAULT,
   };
 
   function stubFetchOnce(items: Array<{ to: string | null; ts: number }>) {
