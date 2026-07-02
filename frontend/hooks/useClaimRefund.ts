@@ -6,6 +6,7 @@ import { getWalletClient } from "@wagmi/core";
 import { VAULT_ADDRESS, VAULT_ABI } from "@/lib/contracts";
 import { activeChain } from "@/lib/wagmi";
 import { BUILDER_SUFFIX } from "@/lib/builderCode";
+import { capture } from "@/lib/analytics";
 
 type Step = "idle" | "claiming" | "done" | "error";
 
@@ -63,6 +64,7 @@ export function useClaimRefund() {
 
       setTxHash(tx);
       setStep("done");
+      capture("refund_claimed", { round_id: roundId.toString() });
     } catch (err) {
       setStep("error");
       setError(err instanceof Error ? err.message : "Claim failed");

@@ -12,6 +12,7 @@ import {
 } from "@/lib/contracts";
 import { activeChain } from "@/lib/wagmi";
 import { BUILDER_SUFFIX } from "@/lib/builderCode";
+import { capture } from "@/lib/analytics";
 
 type Step = "idle" | "approving" | "entering" | "done" | "error";
 
@@ -126,6 +127,7 @@ export function useEnterRound() {
 
       setTxHash(enterTx);
       setStep("done");
+      capture("round_entered", { round_id: roundId.toString() });
     } catch (err: unknown) {
       setStep("error");
       setError(err instanceof Error ? err.message : "Transaction failed");
