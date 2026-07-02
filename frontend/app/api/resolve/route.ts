@@ -28,6 +28,7 @@ import { runOracleScan } from "@/lib/oracle/run";
 import { CELO_RPC_URL } from "@/lib/contracts";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store"; // never cache RPC reads (stale round bug)
 export const maxDuration = 60; // Vercel Pro plan
 
 // RoundStatus enum: 0=Open, 1=Closed, 2=Resolved, 3=Refunded
@@ -71,14 +72,14 @@ export async function GET(request: Request) {
     // ─── Viem clients ─────────────────────────────────────────────────────────
     const publicClient = createPublicClient({
       chain: celo,
-      transport: http(rpcUrl),
+      transport: http(rpcUrl, { fetchOptions: { cache: "no-store" } }),
     });
 
     const account = privateKeyToAccount(privateKey);
     const walletClient = createWalletClient({
       account,
       chain: celo,
-      transport: http(rpcUrl),
+      transport: http(rpcUrl, { fetchOptions: { cache: "no-store" } }),
     });
 
     // ─── Read current round ───────────────────────────────────────────────────
@@ -140,7 +141,7 @@ export async function GET(request: Request) {
         const oracleWallet = createWalletClient({
           account: oracleAccount,
           chain: celo,
-          transport: http(rpcUrl),
+          transport: http(rpcUrl, { fetchOptions: { cache: "no-store" } }),
         });
         const scan = await runOracleScan(
           publicClient as unknown as PublicClient,

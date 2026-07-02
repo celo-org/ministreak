@@ -120,7 +120,7 @@ async function fetchOutgoingTxsSince(
       ? `${baseUrl}${nextPageParams}&apikey=${apiKey}`
       : `${baseUrl}&apikey=${apiKey}`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) {
       console.warn(`Blockscout API error for ${address}: ${res.status}`);
       break;

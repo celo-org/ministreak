@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 
+// Health probes the live chain; never serve cached RPC responses. Without this
+// its getCurrentRoundId eth_call was cached and poisoned reads for the crons.
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+
 export async function GET() {
   try {
     const rpcUrl = process.env.NEXT_PUBLIC_CELO_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
@@ -8,6 +13,7 @@ export async function GET() {
     // Test RPC connectivity
     const blockResponse = await fetch(rpcUrl, {
       method: "POST",
+      cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         jsonrpc: "2.0",

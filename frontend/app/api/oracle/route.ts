@@ -21,6 +21,7 @@ import { runOracleScan } from "@/lib/oracle/run";
 import { CELO_RPC_URL } from "@/lib/contracts";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store"; // never cache RPC reads (see below)
 export const maxDuration = 60; // Vercel Pro plan
 
 export async function GET(request: Request) {
@@ -50,14 +51,14 @@ export async function GET(request: Request) {
     // ─── Viem clients ────────────────────────────────────────────────────────
     const publicClient = createPublicClient({
       chain: celo,
-      transport: http(rpcUrl),
+      transport: http(rpcUrl, { fetchOptions: { cache: "no-store" } }),
     });
 
     const account = privateKeyToAccount(privateKey);
     const walletClient = createWalletClient({
       account,
       chain: celo,
-      transport: http(rpcUrl),
+      transport: http(rpcUrl, { fetchOptions: { cache: "no-store" } }),
     });
 
     // ─── Oracle run ──────────────────────────────────────────────────────────
