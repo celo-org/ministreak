@@ -51,13 +51,24 @@ describe("getRoundDayWindows", () => {
   it("includes day 0 when the round started mid-day today (drifted, non-midnight start)", () => {
     // Regression: round starts at 09:00Z today, 'now' is 12:00Z the same day.
     // The old midnight-aligned logic produced zero windows here, so the entry
-    // day never got scanned and streaks stayed 0.
+    // day never got scanned and streaks stayed 0. 09:00 is >6h from midnight,
+    // so it is NOT snapped — windows align to the actual start.
     const midDayStart = BigInt(Math.floor(Date.UTC(2026, 0, 8, 9, 0, 0) / 1000));
     const windows = getRoundDayWindows(midDayStart);
     expect(windows.map((w) => w.dayIndex)).toEqual([0]);
-    // Window is aligned to the actual start, not to midnight.
     expect(windows[0].start).toBe(Number(midDayStart));
     expect(windows[0].end).toBe(Number(midDayStart) + DAY - 1);
+  });
+
+  it("snaps a near-midnight start so windows align to UTC calendar days", () => {
+    // Round resolved at 00:20Z on Jan 8 (a few minutes past midnight). 'now' is
+    // 12:00Z Jan 8, so we're in day 0 — its window must be the full calendar day.
+    const nearMidnightStart = BigInt(Math.floor(Date.UTC(2026, 0, 8, 0, 20, 0) / 1000));
+    const midnight = Math.floor(Date.UTC(2026, 0, 8, 0, 0, 0) / 1000);
+    const windows = getRoundDayWindows(nearMidnightStart);
+    expect(windows.map((w) => w.dayIndex)).toEqual([0]);
+    expect(windows[0].start).toBe(midnight);
+    expect(windows[0].end).toBe(midnight + DAY - 1);
   });
 });
 

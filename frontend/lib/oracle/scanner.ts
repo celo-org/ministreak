@@ -9,6 +9,7 @@ import {
   type PublicClient,
   parseAbi,
 } from "viem";
+import { DAY, effectiveRoundStart } from "@/lib/roundDay";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -44,29 +45,29 @@ const BLOCKSCOUT_API = "https://celo.blockscout.com/api/v2";
  * Returns the day windows (24h periods) from round start through the current
  * day. Each entry: { dayIndex, start (unix seconds), end (unix seconds) }.
  *
- * Windows are measured from the round's ACTUAL startTime, not from UTC
- * midnight. Rounds do not always start at midnight — `startTime` is the
- * previous round's resolution timestamp, which drifts — so aligning to
- * midnight orphaned the (partial) start day and produced zero windows while
- * the start day was still in progress, meaning no streaks were ever recorded
- * for the day players entered. day 0 = [startTime, startTime + 24h), etc.
+ * Windows are measured from the round's EFFECTIVE start (see roundDay.ts):
+ * a near-midnight start snaps to that UTC midnight, so day 0 = a calendar day
+ * and streak-days roll at 00:00 UTC. A far-from-midnight (legacy mid-day)
+ * start passes through unchanged, so day 0 = [startTime, startTime + 24h) and
+ * the entry day still gets scanned (this fixed the earlier "streak stuck at 0"
+ * bug for rounds that started mid-day).
  */
 export function getRoundDayWindows(roundStartTime: bigint): Array<{
   dayIndex: number;
   start: number;
   end: number;
 }> {
-  const roundStart = Number(roundStartTime);
+  const base = effectiveRoundStart(roundStartTime);
   const now = Math.floor(Date.now() / 1000);
 
   // Which day of the round are we currently in (0-based). Negative if the
   // round hasn't started yet.
-  const currentDayIndex = Math.floor((now - roundStart) / 86400);
+  const currentDayIndex = Math.floor((now - base) / DAY);
 
   const windows: Array<{ dayIndex: number; start: number; end: number }> = [];
   for (let dayIndex = 0; dayIndex <= Math.min(currentDayIndex, 6); dayIndex++) {
-    const start = roundStart + dayIndex * 86400;
-    windows.push({ dayIndex, start, end: start + 86400 - 1 });
+    const start = base + dayIndex * DAY;
+    windows.push({ dayIndex, start, end: start + DAY - 1 });
   }
 
   return windows;
