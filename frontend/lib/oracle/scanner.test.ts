@@ -162,13 +162,17 @@ describe("scanAllPlayers (integration over mocked Blockscout fetch)", () => {
     vaultAddress: VAULT,
   };
 
+  // Stubs the Blockscout fetch. Etherscan is skipped (no ETHERSCAN_API_KEY in
+  // tests), so only this source feeds the union. Items include a hash, which the
+  // union dedups on.
   function stubFetchOnce(items: Array<{ to: string | null; ts: number }>) {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          items: items.map((i) => ({
+          items: items.map((i, idx) => ({
+            hash: `0x${(i.ts * 1000 + idx).toString(16).padStart(64, "0")}`,
             timestamp: new Date(i.ts * 1000).toISOString(),
             to: i.to ? { hash: i.to } : undefined,
           })),
