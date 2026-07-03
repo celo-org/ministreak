@@ -43,7 +43,7 @@ export default function StreakCard({
 
       {!todayDone && streak > 0 && (
         <div className="mt-4 px-4 py-3 rounded-xl bg-coral-tint border border-coral/30 text-coral text-sm">
-          Send a transaction today to keep your streak alive.
+          Send a transaction on Celo today to keep your streak alive.
         </div>
       )}
     </div>
