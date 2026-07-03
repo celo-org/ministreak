@@ -30,7 +30,7 @@ describe("StreakCard", () => {
     render(<StreakCard streak={2} todayDone={false} />);
     expect(screen.getByText("Pending today")).toBeInTheDocument();
     expect(
-      screen.getByText(/Send a transaction today to keep your streak alive/)
+      screen.getByText(/Send a transaction on Celo today to keep your streak alive/)
     ).toBeInTheDocument();
   });
 

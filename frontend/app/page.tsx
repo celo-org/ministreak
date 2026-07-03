@@ -3,7 +3,6 @@
 import { useAccount } from "wagmi";
 import { useCurrentRound } from "@/hooks/useCurrentRound";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
-import { useTodayStreak } from "@/hooks/useTodayStreak";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePreviousRoundRefund } from "@/hooks/usePreviousRoundRefund";
@@ -29,10 +28,20 @@ export default function HomePage() {
     address
   );
 
-  const { data: todayData } = useTodayStreak(
-    round?.roundId?.toString(),
-    address
-  );
+  // "Done today" is derived on-chain: the player's last recorded streak day
+  // equals the current round-day index. The vault (via the oracle) is the
+  // source of truth, so this flips to true within a refetch of the cron
+  // recording today's streak. We avoid the subgraph, which was not the source
+  // of truth and used UTC-midnight day boundaries that don't match a round's
+  // actual (non-midnight, drifting) day windows — so it read "pending" forever.
+  const nowSec = Math.floor(Date.now() / 1000);
+  const currentDayIndex = round
+    ? Math.floor((nowSec - Number(round.startTime)) / 86400)
+    : -1;
+  const todayDone =
+    !!stats?.entered &&
+    stats.lastValidDay !== 255 &&
+    stats.lastValidDay === currentDayIndex;
 
   const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(
     round?.roundId?.toString()
@@ -106,7 +115,7 @@ export default function HomePage() {
       {isConnected && stats?.entered && (
         <StreakCard
           streak={Number(stats.streak)}
-          todayDone={todayData?.todayDone ?? false}
+          todayDone={todayDone}
           isLoading={statsLoading}
         />
       )}
