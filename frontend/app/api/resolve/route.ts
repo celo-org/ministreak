@@ -4,9 +4,12 @@
  * passed, distributing payouts (or refunding if < MIN_PLAYERS) and starting
  * the next round.
  *
- * Triggered hourly by Vercel Cron. Self-healing: it is a cheap 2-read no-op
- * until `now >= round.endTime`, then it resolves once. The on-chain contract
- * has NO endTime guard, so this route enforces the timing itself.
+ * Triggered hourly by Vercel Cron (at :05, just after midnight UTC). Self-
+ * healing: it is a cheap 2-read no-op until `now >= effectiveEnd` (the round's
+ * calendar-snapped 7-day end), then it resolves once. The on-chain contract has
+ * NO endTime guard, so this route enforces the timing itself — and gating on the
+ * snapped end (not the raw, drifting contract endTime) keeps each new round
+ * starting at ~00:00 UTC week after week.
  *
  * Signing wallet must hold KEEPER_ROLE (or DEFAULT_ADMIN_ROLE) on the vault.
  * Uses KEEPER_PRIVATE_KEY if set, otherwise falls back to ORACLE_PRIVATE_KEY
@@ -26,6 +29,10 @@ import { privateKeyToAccount } from "viem/accounts";
 import { celo } from "viem/chains";
 import { runOracleScan } from "@/lib/oracle/run";
 import { CELO_RPC_URL } from "@/lib/contracts";
+import { DAY, effectiveRoundStart } from "@/lib/roundDay";
+
+// A round runs 7 day-windows (matches the contract's DAYS_IN_ROUND).
+const ROUND_DAYS = 7;
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store"; // never cache RPC reads (stale round bug)
@@ -89,24 +96,33 @@ export async function GET(request: Request) {
       functionName: "getCurrentRoundId",
     });
 
-    const [, endTime, , status] = (await publicClient.readContract({
+    const [startTime, , , status] = (await publicClient.readContract({
       address: vaultAddress,
       abi: VAULT_ABI,
       functionName: "rounds",
       args: [roundId],
     })) as [bigint, bigint, bigint, number, bigint];
 
-    const nowSec = BigInt(Math.floor(Date.now() / 1000));
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    // Resolve based on the CALENDAR (snapped) end, not the raw contract endTime.
+    // The raw endTime = startTime + 7d ratchets forward each week (the new
+    // startTime is the resolution timestamp), so gating on it made rounds drift
+    // off midnight. effectiveRoundStart snaps a near-midnight start to 00:00 UTC,
+    // so effectiveEnd is a clean midnight and the round re-anchors to midnight
+    // every week — no drift. (For a legacy mid-day round this equals the raw
+    // endTime, so behaviour is unchanged there.)
+    const effectiveEnd = effectiveRoundStart(startTime) + ROUND_DAYS * DAY;
 
     // Not yet due — no-op.
-    if (nowSec < endTime) {
+    if (nowSec < effectiveEnd) {
       return NextResponse.json({
         ok: true,
         action: "skipped",
         reason: "round not ended",
         round: Number(roundId),
-        endTime: Number(endTime),
-        now: Number(nowSec),
+        effectiveEnd,
+        now: nowSec,
       });
     }
 

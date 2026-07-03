@@ -14,6 +14,7 @@ import ResolveRoundButton from "@/components/ResolveRoundButton";
 import Leaderboard from "@/components/Leaderboard";
 import WalletBadge from "@/components/WalletBadge";
 import LegalLinks from "@/components/Footer";
+import { roundDayIndex } from "@/lib/roundDay";
 import { useState } from "react";
 
 export default function HomePage() {
@@ -31,13 +32,11 @@ export default function HomePage() {
   // "Done today" is derived on-chain: the player's last recorded streak day
   // equals the current round-day index. The vault (via the oracle) is the
   // source of truth, so this flips to true within a refetch of the cron
-  // recording today's streak. We avoid the subgraph, which was not the source
-  // of truth and used UTC-midnight day boundaries that don't match a round's
-  // actual (non-midnight, drifting) day windows — so it read "pending" forever.
+  // recording today's streak. roundDayIndex snaps near-midnight round starts to
+  // UTC midnight, so "today" tracks the calendar day (and matches the scanner's
+  // day-index exactly, since both use the same helper).
   const nowSec = Math.floor(Date.now() / 1000);
-  const currentDayIndex = round
-    ? Math.floor((nowSec - Number(round.startTime)) / 86400)
-    : -1;
+  const currentDayIndex = round ? roundDayIndex(round.startTime, nowSec) : -1;
   const todayDone =
     !!stats?.entered &&
     stats.lastValidDay !== 255 &&

@@ -28,11 +28,13 @@ import { GET } from "./route";
 const DAY = 86400;
 const ROUND_ID = 5n;
 
-function mockRound(endTime: number, status: number) {
+// The route now gates on the snapped 7-day end derived from startTime, so the
+// mock sets startTime (index 0). endTime (index 1) is kept consistent but unused.
+function mockRound(startTime: number, status: number) {
   readContract.mockImplementation(({ functionName }: { functionName: string }) => {
     if (functionName === "getCurrentRoundId") return Promise.resolve(ROUND_ID);
     if (functionName === "rounds")
-      return Promise.resolve([0n, BigInt(endTime), 0n, status, 0n]);
+      return Promise.resolve([BigInt(startTime), BigInt(startTime + 7 * DAY), 0n, status, 0n]);
     return Promise.reject(new Error(`unexpected call ${functionName}`));
   });
 }
@@ -52,7 +54,7 @@ beforeEach(() => {
 
 describe("GET /api/resolve", () => {
   it("is a no-op while the round has not ended", async () => {
-    mockRound(nowSec() + DAY, 0 /* Open */);
+    mockRound(nowSec(), 0 /* Open */); // just started -> effectiveEnd ~7d away
     const res = await GET(req());
     const body = await res.json();
     expect(body.action).toBe("skipped");
@@ -61,7 +63,7 @@ describe("GET /api/resolve", () => {
   });
 
   it("is a no-op when the round is already resolved", async () => {
-    mockRound(nowSec() - DAY, 2 /* Resolved */);
+    mockRound(nowSec() - 8 * DAY, 2 /* Resolved */); // ended, but already resolved
     const res = await GET(req());
     const body = await res.json();
     expect(body.action).toBe("skipped");
@@ -70,7 +72,7 @@ describe("GET /api/resolve", () => {
   });
 
   it("resolves once the round has ended and is still Open", async () => {
-    mockRound(nowSec() - 10, 0 /* Open */);
+    mockRound(nowSec() - 8 * DAY, 0 /* Open */); // ended -> resolves
     const res = await GET(req());
     const body = await res.json();
     expect(body.action).toBe("resolved");
@@ -97,7 +99,7 @@ describe("GET /api/resolve", () => {
   });
 
   it("surfaces a reverted tx as an error", async () => {
-    mockRound(nowSec() - 10, 1 /* Closed */);
+    mockRound(nowSec() - 8 * DAY, 1 /* Closed */); // ended -> attempts resolve
     waitForTransactionReceipt.mockResolvedValue({ status: "reverted" });
     const res = await GET(req());
     expect(res.status).toBe(500);
