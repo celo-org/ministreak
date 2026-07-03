@@ -26,7 +26,8 @@ Derived from the source (`frontend/lib`, `frontend/hooks`, `frontend/app`).
 | Origin | Purpose | Where |
 |--------|---------|-------|
 | `https://forno.celo.org` | RPC for oracle / resolve / health crons | `/api/oracle`, `/api/resolve`, `/api/health` |
-| `https://celo.blockscout.com/api/v2` | Reads a player's outgoing transaction history to compute streaks | `lib/oracle/scanner.ts` |
+| `https://celo.blockscout.com/api/v2` | Reads a player's outgoing transaction history to compute streaks (primary source) | `lib/oracle/scanner.ts` |
+| `https://api.etherscan.io/v2/api` | Second tx-history source (Celo, chainid 42220), unioned with Blockscout so a gap in either doesn't drop a streak. Only used if `ETHERSCAN_API_KEY` is set | `lib/oracle/scanner.ts` |
 
 ## Not contacted in production
 

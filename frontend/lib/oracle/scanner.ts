@@ -40,6 +40,19 @@ const VAULT_ABI = parseAbi([
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const BLOCKSCOUT_API = "https://celo.blockscout.com/api/v2";
+// Etherscan V2 multichain API — Celo mainnet via chainid=42220. Used as a
+// second source: Blockscout has been observed dropping all txs in an indexed
+// block (a hole), which silently loses a player's streak since the oracle read
+// only Blockscout. We union both sources so a gap in either still counts.
+const ETHERSCAN_API = "https://api.etherscan.io/v2/api";
+const CELO_CHAIN_ID = 42220;
+
+type RawTx = {
+  hash: string;
+  to: string | null;
+  timestamp: number;
+  method: string | null;
+};
 
 /**
  * Returns the day windows (24h periods) from round start through the current
@@ -102,18 +115,42 @@ export async function getCurrentRound(
   return { roundId, startTime, endTime, players, vaultAddress };
 }
 
-// ─── Blockscout Scanning ─────────────────────────────────────────────────────
+// ─── Transaction Scanning (Blockscout + Etherscan, unioned) ──────────────────
 
 /**
- * Fetch all outgoing txs for an address from `sinceTimestamp` to now.
- * Paginates through Blockscout API until it hits txs older than sinceTimestamp.
+ * Fetch outgoing txs for an address since `sinceTimestamp`, from BOTH Blockscout
+ * and Etherscan, unioned by tx hash. If either provider has a gap (e.g. a
+ * Blockscout block with missing txs), the other still supplies the tx, so a
+ * player's streak isn't silently dropped. Each source is best-effort: if one
+ * errors (or Etherscan has no API key), the other's results are still used.
  */
 async function fetchOutgoingTxsSince(
   address: Address,
   sinceTimestamp: number,
   apiKey: string
-): Promise<Array<{ to: string | null; timestamp: number; method: string | null }>> {
-  const txs: Array<{ to: string | null; timestamp: number; method: string | null }> = [];
+): Promise<RawTx[]> {
+  const [bs, es] = await Promise.allSettled([
+    fetchFromBlockscout(address, sinceTimestamp, apiKey),
+    fetchFromEtherscan(address, sinceTimestamp),
+  ]);
+  const bsTxs = bs.status === "fulfilled" ? bs.value : [];
+  const esTxs = es.status === "fulfilled" ? es.value : [];
+
+  const byHash = new Map<string, RawTx>();
+  for (const t of bsTxs) if (t.hash) byHash.set(t.hash.toLowerCase(), t);
+  for (const t of esTxs) if (t.hash) byHash.set(t.hash.toLowerCase(), t);
+  return [...byHash.values()];
+}
+
+/**
+ * Fetch outgoing txs from Blockscout, paginating until older than sinceTimestamp.
+ */
+async function fetchFromBlockscout(
+  address: Address,
+  sinceTimestamp: number,
+  apiKey: string
+): Promise<RawTx[]> {
+  const txs: RawTx[] = [];
   let nextPageParams: string | null = null;
 
   while (true) {
@@ -129,7 +166,7 @@ async function fetchOutgoingTxsSince(
     }
 
     const data: {
-      items: Array<{ timestamp: string; to?: { hash: string }; method?: string | null }>;
+      items: Array<{ hash: string; timestamp: string; to?: { hash: string }; method?: string | null }>;
       next_page_params?: { block_number: string; index: number };
     } = await res.json();
 
@@ -142,7 +179,12 @@ async function fetchOutgoingTxsSince(
         foundOlder = true;
         break;
       }
-      txs.push({ to: item.to?.hash || null, timestamp: ts, method: item.method ?? null });
+      txs.push({
+        hash: item.hash,
+        to: item.to?.hash || null,
+        timestamp: ts,
+        method: item.method ?? null,
+      });
     }
 
     if (foundOlder || !data.next_page_params) break;
@@ -151,6 +193,55 @@ async function fetchOutgoingTxsSince(
   }
 
   return txs;
+}
+
+/**
+ * Fetch outgoing txs from the Etherscan V2 API (Celo, chainid 42220). No-op when
+ * ETHERSCAN_API_KEY is unset. Returns [] on any error so it can only ADD to the
+ * union, never break the scan.
+ */
+async function fetchFromEtherscan(
+  address: Address,
+  sinceTimestamp: number
+): Promise<RawTx[]> {
+  const key = process.env.ETHERSCAN_API_KEY;
+  if (!key) return [];
+
+  const url =
+    `${ETHERSCAN_API}?chainid=${CELO_CHAIN_ID}&module=account&action=txlist` +
+    `&address=${address}&startblock=0&endblock=99999999&sort=desc&page=1&offset=1000&apikey=${key}`;
+
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      console.warn(`Etherscan API error for ${address}: ${res.status}`);
+      return [];
+    }
+    const data = (await res.json()) as {
+      status: string;
+      result: unknown;
+    };
+    // status "0" (e.g. "No transactions found" / rate limit) -> treat as empty.
+    if (data.status !== "1" || !Array.isArray(data.result)) return [];
+
+    const out: RawTx[] = [];
+    for (const t of data.result as Array<Record<string, string>>) {
+      // Outgoing only (txlist returns both directions).
+      if ((t.from || "").toLowerCase() !== address.toLowerCase()) continue;
+      const ts = parseInt(t.timeStamp, 10);
+      if (ts < sinceTimestamp) break; // sorted desc
+      out.push({
+        hash: t.hash,
+        to: t.to && t.to !== "" ? t.to : null,
+        timestamp: ts,
+        method: t.functionName ? t.functionName.split("(")[0] : null,
+      });
+    }
+    return out;
+  } catch (e) {
+    console.warn(`Etherscan fetch failed for ${address}: ${(e as Error).message}`);
+    return [];
+  }
 }
 
 /**
