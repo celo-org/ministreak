@@ -252,4 +252,12 @@ describe("scanAllPlayers (integration over mocked Blockscout fetch)", () => {
     };
     expect(await scanAllPlayers(future, "fake-key")).toEqual([]);
   });
+
+  it("with closedOnly:false, includes the in-progress day", async () => {
+    // NOW is Thu 12:00Z; Thu (day 3) is in progress. A tx today (day 3) must appear.
+    const day3 = Number(ROUND_START) + 3 * DAY + 100;
+    stubFetchOnce([{ to: "0xAAAA000000000000000000000000000000000000", ts: day3 }]);
+    const result = await scanAllPlayers(roundInfo, "fake-key", { closedOnly: false });
+    expect(result.map((r) => r.dayIndex)).toContain(3);
+  });
 });
