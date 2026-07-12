@@ -70,6 +70,23 @@ describe("getRoundDayWindows", () => {
     expect(windows[0].start).toBe(midnight);
     expect(windows[0].end).toBe(midnight + DAY - 1);
   });
+
+  it("closedOnly excludes the in-progress day", () => {
+    // NOW is Thu 12:00Z; Thu (day 3) has not closed yet.
+    const windows = getRoundDayWindows(ROUND_START, { closedOnly: true });
+    expect(windows.map((w) => w.dayIndex)).toEqual([0, 1, 2]);
+  });
+
+  it("closedOnly returns no windows on the first day before it closes", () => {
+    // Round started today at 00:00Z; day 0 ends 23:59:59Z, still in progress.
+    const todayStart = BigInt(Math.floor(Date.UTC(2026, 0, 8, 0, 0, 0) / 1000));
+    expect(getRoundDayWindows(todayStart, { closedOnly: true })).toEqual([]);
+  });
+
+  it("closedOnly still includes every fully-elapsed day", () => {
+    const windows = getRoundDayWindows(ROUND_START, { closedOnly: true });
+    for (const w of windows) expect(w.end).toBeLessThan(Math.floor(NOW_MS / 1000));
+  });
 });
 
 describe("analyzePlayerTxsByDay", () => {

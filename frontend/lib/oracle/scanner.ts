@@ -67,7 +67,10 @@ type RawTx = {
  * the entry day still gets scanned (this fixed the earlier "streak stuck at 0"
  * bug for rounds that started mid-day).
  */
-export function getRoundDayWindows(roundStartTime: bigint): Array<{
+export function getRoundDayWindows(
+  roundStartTime: bigint,
+  opts: { closedOnly?: boolean } = {}
+): Array<{
   dayIndex: number;
   start: number;
   end: number;
@@ -82,7 +85,12 @@ export function getRoundDayWindows(roundStartTime: bigint): Array<{
   const windows: Array<{ dayIndex: number; start: number; end: number }> = [];
   for (let dayIndex = 0; dayIndex <= Math.min(currentDayIndex, 6); dayIndex++) {
     const start = base + dayIndex * DAY;
-    windows.push({ dayIndex, start, end: start + DAY - 1 });
+    const end = start + DAY - 1;
+    // Submit a day's Score only after it closes, so the full day is rate-capped
+    // before the on-chain once-only guard locks it in. The live "Today's in"
+    // feel is handled client-side (optimistic UI).
+    if (opts.closedOnly && end >= now) continue;
+    windows.push({ dayIndex, start, end });
   }
 
   return windows;
@@ -329,7 +337,7 @@ export async function scanAllPlayers(
   roundInfo: RoundInfo,
   apiKey: string
 ): Promise<QualifyingTx[]> {
-  const dayWindows = getRoundDayWindows(roundInfo.startTime);
+  const dayWindows = getRoundDayWindows(roundInfo.startTime, { closedOnly: true });
 
   if (dayWindows.length === 0) {
     console.log("No day windows to scan (round may not have started yet)");
