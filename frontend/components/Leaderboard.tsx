@@ -79,8 +79,11 @@ export default function Leaderboard({
               <p className={`font-sans font-bold text-xl num leading-none ${isTop3 ? "text-gold" : "text-ink"}`}>
                 {entry.streak}
               </p>
-              <p className="text-[10px] uppercase tracking-cap text-ink-mute mt-1">
-                {entry.txCount} tx
+              <p
+                className="text-[10px] uppercase tracking-cap text-ink-mute mt-1"
+                title="rate-capped activity — spamming doesn't help"
+              >
+                {entry.txCount} pts
               </p>
             </div>
 

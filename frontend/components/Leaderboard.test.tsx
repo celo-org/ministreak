@@ -74,4 +74,10 @@ describe("Leaderboard", () => {
     expect(screen.getByText("$5.00")).toBeInTheDocument();
     expect(screen.getByText("—")).toBeInTheDocument();
   });
+
+  it("labels the activity value as Score points, not raw tx", () => {
+    render(<Leaderboard entries={[entry({ txCount: 12 })]} showPrizes={false} />);
+    expect(screen.getByText("12 pts")).toBeInTheDocument();
+    expect(screen.queryByText("12 tx")).not.toBeInTheDocument();
+  });
 });
