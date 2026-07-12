@@ -23,7 +23,7 @@ export async function getPriorParticipants(
   roundId: bigint
 ): Promise<PriorParticipation> {
   const readPlayers = async (rid: bigint): Promise<Set<string>> => {
-    if (rid < 1n) return new Set();
+    if (rid < BigInt(1)) return new Set();
     try {
       const players = (await client.readContract({
         address: vaultAddress,
@@ -38,8 +38,8 @@ export async function getPriorParticipants(
   };
 
   const [prev, prev2] = await Promise.all([
-    readPlayers(roundId - 1n),
-    readPlayers(roundId - 2n),
+    readPlayers(roundId - BigInt(1)),
+    readPlayers(roundId - BigInt(2)),
   ]);
   return { prev, prev2 };
 }
