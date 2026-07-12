@@ -72,6 +72,14 @@ export async function runOracleScan(
 
   // Write today's provisional snapshot to KV (display-only, non-fatal). The open
   // day is the day currently in progress; everything before it has closed.
+  //
+  // Safety invariant: the snapshot's dayIndex always equals currentDayIndex, and
+  // submitted days are strictly < currentDayIndex — so the open day is never both
+  // on-chain and in KV, and the additive merge can't double-count. Caveat: this
+  // write is best-effort (try/catch). If it fails exactly on the run that first
+  // submits a newly-closed day D, the prior snapshot (still dayIndex D) lingers
+  // until the next successful write (or the 3h TTL), briefly double-adding day
+  // D's score in the live view. Display-only, self-healing on the next run.
   const nowSec = Math.floor(Date.now() / 1000);
   const currentDayIndex = roundDayIndex(roundInfo.startTime, nowSec);
   if (currentDayIndex >= 0 && currentDayIndex <= 6) {
