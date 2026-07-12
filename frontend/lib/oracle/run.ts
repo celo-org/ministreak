@@ -14,6 +14,9 @@ import type { Address, PublicClient, WalletClient } from "viem";
 import { getCurrentRound, scanAllPlayers } from "./scanner";
 import { checkAlreadySubmitted, batchSubmitStreaks } from "./submitter";
 import { getPriorParticipants, loyaltyMultiplierFor, applyLoyalty } from "./loyalty";
+import { computeProvisional } from "./provisional";
+import { writeProvisional } from "./provisionalStore";
+import { roundDayIndex } from "@/lib/roundDay";
 
 export interface OracleRunResult {
   round: number;
@@ -47,11 +50,11 @@ export async function runOracleScan(
 
   if (roundInfo.players.length === 0) return base;
 
-  console.log("Oracle: scanning players...");
-  const scanned = await scanAllPlayers(roundInfo, apiKey);
+  console.log("Oracle: scanning players (all days)...");
+  const scanned = await scanAllPlayers(roundInfo, apiKey, { closedOnly: false });
   const noActivity = roundInfo.players.length - scanned.length;
   console.log(
-    `Oracle: ${scanned.length} qualifying out of ${roundInfo.players.length}`
+    `Oracle: ${scanned.length} qualifying entries out of ${roundInfo.players.length} players`
   );
 
   if (scanned.length === 0) return { ...base, noActivity };
@@ -63,9 +66,30 @@ export async function runOracleScan(
     vaultAddress,
     roundInfo.roundId
   );
-  const qualifying = applyLoyalty(scanned, (player) =>
+  const allWithLoyalty = applyLoyalty(scanned, (player) =>
     loyaltyMultiplierFor(player, parts)
   );
+
+  // Write today's provisional snapshot to KV (display-only, non-fatal). The open
+  // day is the day currently in progress; everything before it has closed.
+  const nowSec = Math.floor(Date.now() / 1000);
+  const currentDayIndex = roundDayIndex(roundInfo.startTime, nowSec);
+  if (currentDayIndex >= 0 && currentDayIndex <= 6) {
+    try {
+      const snapshot = computeProvisional(allWithLoyalty, currentDayIndex, roundInfo);
+      await writeProvisional(snapshot);
+      console.log(`Oracle: wrote provisional snapshot (day ${currentDayIndex}).`);
+    } catch (e) {
+      console.warn(`Oracle: provisional write failed: ${(e as Error).message}`);
+    }
+  }
+
+  // Only CLOSED days are submitted on-chain (the once-only guard locks a day, so
+  // we submit it after it closes and is fully rate-capped).
+  const qualifying = allWithLoyalty.filter((q) => q.dayIndex < currentDayIndex);
+  if (qualifying.length === 0) {
+    return { ...base, noActivity };
+  }
 
   console.log("Oracle: checking on-chain submission status...");
   const submitted = await checkAlreadySubmitted(
