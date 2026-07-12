@@ -9,6 +9,7 @@ interface LeaderboardProps {
   showPrizes?: boolean;
   maxRows?: number;
   highlightAddress?: string;
+  updatedAt?: number; // unix seconds; when set, renders a LIVE badge
 }
 
 const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
@@ -19,6 +20,7 @@ export default function Leaderboard({
   showPrizes = true,
   maxRows,
   highlightAddress,
+  updatedAt,
 }: LeaderboardProps) {
   if (isLoading) {
     return (
@@ -38,10 +40,24 @@ export default function Leaderboard({
     );
   }
 
+  const liveLabel = (() => {
+    if (updatedAt === undefined) return null;
+    const mins = Math.max(0, Math.floor(Date.now() / 1000 - updatedAt) / 60);
+    const rounded = Math.floor(mins);
+    return rounded < 1 ? "just now" : `${rounded}m ago`;
+  })();
+
   const displayedEntries = maxRows ? entries.slice(0, maxRows) : entries;
 
   return (
-    <div className="card !p-0 overflow-hidden">
+    <div className="space-y-2">
+      {liveLabel && (
+        <div className="flex items-center gap-2 text-[10px] uppercase tracking-cap text-forest">
+          <span className="h-1.5 w-1.5 rounded-full bg-forest animate-pulse" />
+          LIVE · updated {liveLabel}
+        </div>
+      )}
+      <div className="card !p-0 overflow-hidden">
       {displayedEntries.map((entry, idx) => {
         const isMe =
           highlightAddress &&
@@ -101,6 +117,7 @@ export default function Leaderboard({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

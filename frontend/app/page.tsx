@@ -46,9 +46,8 @@ export default function HomePage() {
   const { hasActivityToday } = useTodayActivity(address, round);
   const optimisticToday = hasActivityToday && !todayDone;
 
-  const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(
-    round?.roundId?.toString()
-  );
+  const { data: leaderboard, isLoading: lbLoading, updatedAt: lbUpdatedAt } =
+    useLeaderboard(round?.roundId?.toString());
 
   const { isAdmin } = useIsAdmin(address);
 
@@ -174,6 +173,7 @@ export default function HomePage() {
           showPrizes
           maxRows={5}
           highlightAddress={address}
+          updatedAt={lbUpdatedAt}
         />
       </section>
 

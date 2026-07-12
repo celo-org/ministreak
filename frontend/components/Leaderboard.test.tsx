@@ -80,4 +80,16 @@ describe("Leaderboard", () => {
     expect(screen.getByText("12 pts")).toBeInTheDocument();
     expect(screen.queryByText("12 tx")).not.toBeInTheDocument();
   });
+
+  it("shows a LIVE badge when updatedAt is provided", () => {
+    const now = Math.floor(Date.now() / 1000);
+    render(<Leaderboard entries={[entry({})]} updatedAt={now - 120} showPrizes={false} />);
+    expect(screen.getByText(/LIVE/i)).toBeInTheDocument();
+    expect(screen.getByText(/2m ago/i)).toBeInTheDocument();
+  });
+
+  it("shows no LIVE badge without updatedAt", () => {
+    render(<Leaderboard entries={[entry({})]} showPrizes={false} />);
+    expect(screen.queryByText(/LIVE/i)).not.toBeInTheDocument();
+  });
 });
