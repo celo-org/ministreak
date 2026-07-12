@@ -3,12 +3,14 @@
 interface StreakCardProps {
   streak: number;
   todayDone: boolean;
+  optimistic?: boolean;
   isLoading?: boolean;
 }
 
 export default function StreakCard({
   streak,
   todayDone,
+  optimistic,
   isLoading,
 }: StreakCardProps) {
   if (isLoading) {
@@ -33,7 +35,7 @@ export default function StreakCard({
           {todayDone ? (
             <span className="pill-forest">
               <span className="h-1.5 w-1.5 rounded-full bg-forest" />
-              Today’s in
+              {optimistic ? "Today’s in · confirming" : "Today’s in"}
             </span>
           ) : (
             <span className="pill-muted">Pending today</span>

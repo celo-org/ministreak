@@ -6,6 +6,7 @@ import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePreviousRoundRefund } from "@/hooks/usePreviousRoundRefund";
+import { useTodayActivity } from "@/hooks/useTodayActivity";
 import StreakCard from "@/components/StreakCard";
 import RoundTimer from "@/components/RoundTimer";
 import EntryButton from "@/components/EntryButton";
@@ -41,6 +42,9 @@ export default function HomePage() {
     !!stats?.entered &&
     stats.lastValidDay !== 255 &&
     stats.lastValidDay === currentDayIndex;
+
+  const { hasActivityToday } = useTodayActivity(address, round);
+  const optimisticToday = hasActivityToday && !todayDone;
 
   const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(
     round?.roundId?.toString()
@@ -114,7 +118,8 @@ export default function HomePage() {
       {isConnected && stats?.entered && (
         <StreakCard
           streak={Number(stats.streak)}
-          todayDone={todayDone}
+          todayDone={todayDone || hasActivityToday}
+          optimistic={optimisticToday}
           isLoading={statsLoading}
         />
       )}
