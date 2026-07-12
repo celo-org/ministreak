@@ -6,6 +6,7 @@ import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePreviousRoundRefund } from "@/hooks/usePreviousRoundRefund";
+import { useTodayActivity } from "@/hooks/useTodayActivity";
 import StreakCard from "@/components/StreakCard";
 import RoundTimer from "@/components/RoundTimer";
 import EntryButton from "@/components/EntryButton";
@@ -41,6 +42,9 @@ export default function HomePage() {
     !!stats?.entered &&
     stats.lastValidDay !== 255 &&
     stats.lastValidDay === currentDayIndex;
+
+  const { hasActivityToday } = useTodayActivity(address, round);
+  const optimisticToday = hasActivityToday && !todayDone;
 
   const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(
     round?.roundId?.toString()
@@ -114,7 +118,8 @@ export default function HomePage() {
       {isConnected && stats?.entered && (
         <StreakCard
           streak={Number(stats.streak)}
-          todayDone={todayDone}
+          todayDone={todayDone || hasActivityToday}
+          optimistic={optimisticToday}
           isLoading={statsLoading}
         />
       )}
@@ -191,7 +196,7 @@ export default function HomePage() {
             {[
               <>Pay <strong>0.10 USDT</strong> to enter each week’s round (Mon 00:00 — Sun 23:59 UTC).</>,
               <>Send <strong>any outgoing transaction</strong> every day to build your streak.</>,
-              <>Ranking: longest streak, then tx count, then unique addresses.</>,
+              <>Ranking: longest streak, then <strong>Score</strong> (rate-capped activity — spamming doesn’t help), then unique addresses.</>,
               <>Miss a day? <strong>You’re out</strong> — streak resets to zero.</>,
               <>Winners split the pot <strong>50 / 30 / 20</strong> (minus 5% fee).</>,
               <>Fewer than 3 players? All entry fees are refunded.</>,

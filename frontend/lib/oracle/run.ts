@@ -13,6 +13,7 @@
 import type { Address, PublicClient, WalletClient } from "viem";
 import { getCurrentRound, scanAllPlayers } from "./scanner";
 import { checkAlreadySubmitted, batchSubmitStreaks } from "./submitter";
+import { getPriorParticipants, loyaltyMultiplierFor, applyLoyalty } from "./loyalty";
 
 export interface OracleRunResult {
   round: number;
@@ -47,13 +48,24 @@ export async function runOracleScan(
   if (roundInfo.players.length === 0) return base;
 
   console.log("Oracle: scanning players...");
-  const qualifying = await scanAllPlayers(roundInfo, apiKey);
-  const noActivity = roundInfo.players.length - qualifying.length;
+  const scanned = await scanAllPlayers(roundInfo, apiKey);
+  const noActivity = roundInfo.players.length - scanned.length;
   console.log(
-    `Oracle: ${qualifying.length} qualifying out of ${roundInfo.players.length}`
+    `Oracle: ${scanned.length} qualifying out of ${roundInfo.players.length}`
   );
 
-  if (qualifying.length === 0) return { ...base, noActivity };
+  if (scanned.length === 0) return { ...base, noActivity };
+
+  // Apply the loyalty multiplier (returning players score higher). Prior rosters
+  // are read on-chain once per run, independent of player count.
+  const parts = await getPriorParticipants(
+    publicClient,
+    vaultAddress,
+    roundInfo.roundId
+  );
+  const qualifying = applyLoyalty(scanned, (player) =>
+    loyaltyMultiplierFor(player, parts)
+  );
 
   console.log("Oracle: checking on-chain submission status...");
   const submitted = await checkAlreadySubmitted(

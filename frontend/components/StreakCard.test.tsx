@@ -40,4 +40,9 @@ describe("StreakCard", () => {
       screen.queryByText(/keep your streak alive/)
     ).not.toBeInTheDocument();
   });
+
+  it("shows a 'confirming' state when today is optimistic-only", () => {
+    render(<StreakCard streak={3} todayDone optimistic />);
+    expect(screen.getByText(/confirming/i)).toBeInTheDocument();
+  });
 });
