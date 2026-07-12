@@ -101,8 +101,8 @@ describe("analyzePlayerTxsByDay", () => {
   it("counts txs and unique recipients per day, carrying roundId", () => {
     const txs = [
       { to: "0xAAAA000000000000000000000000000000000000", timestamp: windows[0].start + 10 },
-      { to: "0xaaaa000000000000000000000000000000000000", timestamp: windows[0].start + 20 }, // same recipient, diff case
-      { to: "0xBBBB000000000000000000000000000000000000", timestamp: windows[0].start + 30 },
+      { to: "0xaaaa000000000000000000000000000000000000", timestamp: windows[0].start + 1810 }, // +30m10s, same recipient diff case
+      { to: "0xBBBB000000000000000000000000000000000000", timestamp: windows[0].start + 3620 }, // +60m20s
     ];
     const result = analyzePlayerTxsByDay(player, txs, roundInfo, windows);
     expect(result).toHaveLength(1);
@@ -113,6 +113,30 @@ describe("analyzePlayerTxsByDay", () => {
       txCount: 3,
       uniqueToCount: 2, // AAAA (deduped across casing) + BBBB
     });
+  });
+
+  it("rate-caps a same-window burst to a single counted tx (anti-farm)", () => {
+    const s = windows[0].start;
+    const txs = [
+      { to: "0xAAAA000000000000000000000000000000000000", timestamp: s + 10 },
+      { to: "0xBBBB000000000000000000000000000000000000", timestamp: s + 20 },
+      { to: "0xCCCC000000000000000000000000000000000000", timestamp: s + 30 },
+    ];
+    const result = analyzePlayerTxsByDay(player, txs, roundInfo, windows);
+    expect(result).toHaveLength(1);
+    // Only the first tx of the window counts.
+    expect(result[0]).toMatchObject({ dayIndex: 0, txCount: 1, uniqueToCount: 1 });
+  });
+
+  it("counts uniqueTo only over the rate-capped set", () => {
+    const s = windows[0].start;
+    const txs = [
+      { to: "0xAAAA000000000000000000000000000000000000", timestamp: s + 10 },
+      { to: "0xBBBB000000000000000000000000000000000000", timestamp: s + 20 }, // same window -> dropped
+      { to: "0xCCCC000000000000000000000000000000000000", timestamp: s + 1810 }, // next window -> counted
+    ];
+    const result = analyzePlayerTxsByDay(player, txs, roundInfo, windows);
+    expect(result[0]).toMatchObject({ dayIndex: 0, txCount: 2, uniqueToCount: 2 }); // AAAA + CCCC
   });
 
   it("produces a separate entry per qualifying day", () => {

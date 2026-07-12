@@ -10,6 +10,8 @@ import {
   parseAbi,
 } from "viem";
 import { DAY, effectiveRoundStart } from "@/lib/roundDay";
+import { rateCapTxs } from "./rateCap";
+import { RATE_WINDOW_SECONDS } from "./scoreConfig";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -294,8 +296,12 @@ export function analyzePlayerTxsByDay(
     const isEntryDay = hasEntry && dayIndex === entryDayIndex;
     if (dayTxs.length === 0 && !isEntryDay) continue;
 
+    // Anti-farm: count at most one tx per RATE_WINDOW_SECONDS. uniqueToCount is
+    // measured over the SAME capped set so both tiebreakers derive from one
+    // consistent set (closes the alt-spam hole on the tertiary key).
+    const counted = rateCapTxs(dayTxs, RATE_WINDOW_SECONDS);
     const uniqueToAddresses = new Set<string>();
-    for (const tx of dayTxs) {
+    for (const tx of counted) {
       uniqueToAddresses.add(tx.to!.toLowerCase());
     }
 
@@ -303,7 +309,7 @@ export function analyzePlayerTxsByDay(
       player,
       roundId: roundInfo.roundId,
       dayIndex,
-      txCount: dayTxs.length,
+      txCount: counted.length,
       uniqueToCount: uniqueToAddresses.size,
     });
   }
