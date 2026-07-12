@@ -194,7 +194,7 @@ export default function HomePage() {
         {howToOpen && (
           <ol className="mt-4 space-y-3 text-ink leading-relaxed">
             {[
-              <>Pay <strong>0.10 USDT</strong> to enter each week’s round (Mon 00:00 — Sun 23:59 UTC).</>,
+              <>Pay <strong>0.10 USDT</strong> to enter each week’s round.</>,
               <>Send <strong>any outgoing transaction</strong> every day to build your streak.</>,
               <>Ranking: longest streak, then <strong>Score</strong> (rate-capped activity — spamming doesn’t help), then unique addresses.</>,
               <>Miss a day? <strong>You’re out</strong> — streak resets to zero.</>,
