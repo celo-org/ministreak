@@ -335,9 +335,11 @@ export function analyzePlayerTxsByDay(
  */
 export async function scanAllPlayers(
   roundInfo: RoundInfo,
-  apiKey: string
+  apiKey: string,
+  opts: { closedOnly?: boolean } = {}
 ): Promise<QualifyingTx[]> {
-  const dayWindows = getRoundDayWindows(roundInfo.startTime, { closedOnly: true });
+  const { closedOnly = true } = opts;
+  const dayWindows = getRoundDayWindows(roundInfo.startTime, { closedOnly });
 
   if (dayWindows.length === 0) {
     console.log("No day windows to scan (round may not have started yet)");

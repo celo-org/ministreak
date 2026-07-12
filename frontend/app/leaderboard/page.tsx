@@ -10,7 +10,7 @@ export default function LeaderboardPage() {
   const { data: round } = useCurrentRound();
   const displayRoundId = round?.roundId?.toString() || undefined;
 
-  const { data: leaderboard, isLoading } = useLeaderboard(displayRoundId);
+  const { data: leaderboard, isLoading, updatedAt } = useLeaderboard(displayRoundId);
 
   const stats = leaderboard?.round;
 
@@ -61,6 +61,7 @@ export default function LeaderboardPage() {
         isLoading={isLoading}
         showPrizes
         highlightAddress={address}
+        updatedAt={updatedAt}
       />
 
       {/* Tiebreaker note */}
