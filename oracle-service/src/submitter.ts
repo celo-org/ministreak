@@ -116,6 +116,10 @@ export async function submitStreak(qualifying: QualifyingTx): Promise<string> {
     `day=${qualifying.dayIndex}, txCount=${qualifying.txCount}, uniqueTo=${qualifying.uniqueToCount}`
   );
 
+  // Fetch current gas price with 20% buffer
+  const gasPrice = await publicClient.getGasPrice();
+  const gasPriceWithBuffer = (gasPrice * BigInt(120)) / BigInt(100);
+
   // Simulate first to catch reverts early
   await publicClient.simulateContract({
     address: config.oracleAddress,
@@ -142,7 +146,7 @@ export async function submitStreak(qualifying: QualifyingTx): Promise<string> {
       qualifying.txCount,
       qualifying.uniqueToCount,
     ],
-    gasPrice: BigInt(5_000_000_000),
+    gasPrice: gasPriceWithBuffer,
   });
 
   log.info(`Streak submitted. Tx: ${hash}`);
@@ -177,12 +181,16 @@ export async function batchSubmitStreaks(
 
   log.info(`Batch submitting ${qualifyingList.length} streak proofs...`);
 
+  // Fetch current gas price with 20% buffer
+  const gasPrice = await publicClient.getGasPrice();
+  const gasPriceWithBuffer = (gasPrice * BigInt(120)) / BigInt(100);
+
   const hash = await (walletClient.writeContract as any)({
     address: config.oracleAddress,
     abi: ORACLE_ABI,
     functionName: "batchSubmitStreaks",
     args: [players, roundIds, dayIndexes, txCounts, uniqueToCounts],
-    gasPrice: BigInt(5_000_000_000),
+    gasPrice: gasPriceWithBuffer,
   });
 
   log.info(`Batch submitted. Tx: ${hash}`);

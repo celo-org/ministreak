@@ -55,7 +55,7 @@ export default function MePage() {
         <WalletBadge />
       </header>
 
-      <h1 className="font-display text-3xl font-bold tracking-tight">Me</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight">Profile</h1>
 
       {/* identity */}
       <div className="flex flex-col items-center gap-1.5">
@@ -63,7 +63,7 @@ export default function MePage() {
           {monogram(name)}
           <span className="lvl num">LVL&nbsp;{level}</span>
         </div>
-        <div className="font-display text-[23px] font-bold mt-2">{name}</div>
+        <div className="font-display text-[23px] font-semibold mt-2">{name}</div>
         <div className="text-ink-mute text-[12.5px] font-mono">{shortAddress(address)}</div>
       </div>
 
@@ -101,7 +101,7 @@ export default function MePage() {
       {/* XP progress */}
       <div className="card !p-4">
         <div className="flex items-baseline justify-between">
-          <span className="font-display text-base font-bold num">Level {level} → {level + 1}</span>
+          <span className="font-display text-base font-semibold num">Level {level} → {level + 1}</span>
           <span className="font-display text-[12.5px] font-semibold text-ink-mute num">
             {xpInto} / {xpFor} XP
           </span>

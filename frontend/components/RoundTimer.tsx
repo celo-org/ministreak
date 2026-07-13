@@ -62,7 +62,7 @@ export default function RoundTimer({ endTime, variant = "card" }: RoundTimerProp
       <div className="grid grid-cols-3 gap-1.5">
         {segs.map(({ label, value }) => (
           <div key={label} className="rounded-xl bg-white/[0.16] py-1.5 text-center">
-            <span className="block font-display font-bold text-lg num leading-none">{value}</span>
+            <span className="block font-display font-semibold text-lg num leading-none">{value}</span>
             <span className="block text-[9px] uppercase tracking-[0.08em] opacity-85 mt-0.5">{label}</span>
           </div>
         ))}

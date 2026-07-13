@@ -160,22 +160,30 @@ export async function scanPlayerToday(
     return null;
   }
 
+  // Filter out self-sends
+  const validTxs = txs.filter(
+    (tx) => tx.to && tx.to.toLowerCase() !== player.toLowerCase()
+  );
+
+  if (validTxs.length === 0) {
+    log.debug(`Player ${player}: no valid outgoing txs today (all self-sends or no recipient)`);
+    return null;
+  }
+
   const uniqueToAddresses = new Set<string>();
-  for (const tx of txs) {
-    if (tx.to) {
-      uniqueToAddresses.add(tx.to.toLowerCase());
-    }
+  for (const tx of validTxs) {
+    uniqueToAddresses.add(tx.to!.toLowerCase());
   }
 
   log.info(
-    `Player ${player}: ${txs.length} txs, ${uniqueToAddresses.size} unique addrs, day=${dayIndex}`
+    `Player ${player}: ${validTxs.length} txs (${txs.length - validTxs.length} self-sends filtered), ${uniqueToAddresses.size} unique addrs, day=${dayIndex}`
   );
 
   return {
     player,
     roundId,
     dayIndex,
-    txCount: txs.length,
+    txCount: validTxs.length,
     uniqueToCount: uniqueToAddresses.size,
   };
 }

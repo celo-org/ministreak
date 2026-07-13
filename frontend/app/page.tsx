@@ -79,11 +79,11 @@ export default function HomePage() {
           <div className="avatar w-11 h-11 text-[15px]">{monogram(name)}</div>
           <div className="min-w-0 flex-1">
             {isReturning && (
-              <div className="text-[10px] font-bold uppercase tracking-[0.13em] text-ink-mute">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-ink-mute">
                 Welcome back
               </div>
             )}
-            <div className="font-display font-bold text-lg leading-tight truncate">{name}</div>
+            <div className="font-display font-semibold text-lg leading-tight truncate">{name}</div>
           </div>
           {streak > 0 && (
             <span className="pill-stat chip-amber">
@@ -107,15 +107,15 @@ export default function HomePage() {
         </div>
         {roundError ? (
           <>
-            <p className="font-display font-bold text-xl">Contract unreachable</p>
+            <p className="font-display font-semibold text-xl">Contract unreachable</p>
             <p className="text-xs opacity-90 mt-1">Connect to Celo and try again.</p>
           </>
         ) : round ? (
           <>
-            <p className="text-[10px] font-bold uppercase tracking-[0.13em] opacity-90">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.13em] opacity-90">
               Round #{round.roundId.toString()} {round.isOpen ? "· Open" : "· Closed"}
             </p>
-            <p className="font-display font-bold text-[44px] leading-none mt-1.5 num">
+            <p className="font-display font-semibold text-[44px] leading-none mt-1.5 num">
               {round.potFormatted}
               <span className="text-lg opacity-85 font-semibold ml-1.5">USDT</span>
             </p>
@@ -138,7 +138,7 @@ export default function HomePage() {
                   onSuccess={refetchRound}
                 />
               ) : (
-                <div className="text-center rounded-2xl bg-white/15 text-white/85 font-display font-bold py-3">
+                <div className="text-center rounded-2xl bg-white/15 text-white/85 font-display font-semibold py-3">
                   Connect a wallet to enter
                 </div>
               )}
@@ -161,13 +161,13 @@ export default function HomePage() {
 
       {/* Daily XP — make the everyday reward loop obvious */}
       {isConnected && stats?.entered && (
-        <div className="card !p-4">
+        <div className="card !p-4 relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
               <div className="chip chip-forest w-[30px] h-[30px]"><ScoreIcon /></div>
-              <b className="font-display text-sm font-bold">Daily XP</b>
+              <b className="font-display text-sm font-semibold">Daily XP</b>
             </div>
-            <span className="font-display text-[15px] font-bold text-forest num">+{dailyXp} XP today</span>
+            <span className="font-display text-[15px] font-semibold text-forest num">+{dailyXp} XP today</span>
           </div>
           <div className="flex gap-1.5">
             {[0, 1, 2, 3, 4, 5, 6].map((d) => {
@@ -176,7 +176,7 @@ export default function HomePage() {
               return (
                 <div key={d} className="flex-1 flex flex-col items-center gap-1">
                   <div
-                    className={`w-full max-w-[30px] aspect-square rounded-full grid place-items-center font-display font-bold text-[10px] num ${
+                    className={`w-full max-w-[30px] aspect-square rounded-full grid place-items-center font-display font-semibold text-[10px] num ${
                       done
                         ? "bg-forest text-white"
                         : today
@@ -186,7 +186,7 @@ export default function HomePage() {
                   >
                     {d + 1}
                   </div>
-                  <span className={`text-[8.5px] num ${today ? "text-amber font-bold" : "text-ink-mute"}`}>
+                  <span className={`text-[8.5px] num ${today ? "text-amber font-semibold" : "text-ink-mute"}`}>
                     +{xpForDay(d + 1)}
                   </span>
                 </div>
@@ -194,6 +194,7 @@ export default function HomePage() {
             })}
           </div>
           <div className="text-[10.5px] text-ink-mute mt-2.5">Send a transaction daily to earn XP.</div>
+          <span className="absolute left-4 right-4 bottom-0 h-[3px] rounded-full bg-forest" />
         </div>
       )}
 
@@ -216,7 +217,7 @@ export default function HomePage() {
       {/* Top 5 leaderboard */}
       <section className="space-y-3">
         <div className="flex items-end justify-between">
-          <h2 className="font-display font-bold text-2xl tracking-tight">This week</h2>
+          <h2 className="font-display font-semibold text-2xl tracking-tight">This week</h2>
           <span className="eyebrow">Top 5</span>
         </div>
         <Leaderboard
@@ -235,7 +236,7 @@ export default function HomePage() {
           onClick={() => setHowToOpen(!howToOpen)}
           className="flex items-center justify-between w-full text-left"
         >
-          <span className="font-display font-bold text-lg text-ink tracking-tight">How to play</span>
+          <span className="font-display font-semibold text-lg text-ink tracking-tight">How to play</span>
           <span className={`text-forest text-2xl leading-none transition-transform ${howToOpen ? "rotate-45" : ""}`}>
             +
           </span>
@@ -252,7 +253,7 @@ export default function HomePage() {
               <>Fewer than 3 players? All entry fees are refunded.</>,
             ].map((line, i) => (
               <li key={i} className="flex gap-3">
-                <span className="font-display font-bold text-forest num shrink-0 w-6">0{i + 1}</span>
+                <span className="font-display font-semibold text-forest num shrink-0 w-6">0{i + 1}</span>
                 <span>{line}</span>
               </li>
             ))}

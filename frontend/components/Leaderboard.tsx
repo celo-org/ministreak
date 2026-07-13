@@ -69,7 +69,7 @@ export default function Leaderboard({
               {entry.rank === 1 ? (
                 <MedalIcon width={18} height={18} className="text-gold-bright" />
               ) : (
-                <span className="font-display font-bold text-[13px] text-ink-mute num">
+                <span className="font-display font-semibold text-[13px] text-ink-mute num">
                   {entry.rank}
                 </span>
               )}
@@ -83,7 +83,7 @@ export default function Leaderboard({
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className={`font-display font-bold text-sm truncate leading-tight ${isMe ? "text-forest-deep" : "text-ink"}`}>
+              <p className={`font-display font-semibold text-sm truncate leading-tight ${isMe ? "text-forest-deep" : "text-ink"}`}>
                 {isMe ? "You" : name}
               </p>
               <p className="font-mono text-[10.5px] text-ink-faint truncate">
@@ -92,7 +92,7 @@ export default function Leaderboard({
             </div>
 
             <div className="text-right flex-shrink-0">
-              <p className="font-display font-bold text-[15px] num leading-none text-ink">
+              <p className="font-display font-semibold text-[15px] num leading-none text-ink">
                 {entry.streak}
               </p>
               <p
@@ -106,7 +106,7 @@ export default function Leaderboard({
             {showPrizes && (
               <div className="w-11 text-right flex-shrink-0">
                 {parseFloat(entry.estimatedPrize) > 0 ? (
-                  <span className="font-display text-xs font-bold text-forest num">
+                  <span className="font-display text-xs font-semibold text-forest num">
                     ${entry.estimatedPrize}
                   </span>
                 ) : (

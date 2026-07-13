@@ -30,7 +30,7 @@ export default function BottomNav() {
               }`}
             >
               <Icon width={23} height={23} />
-              <span className="font-display text-[11px] font-bold tracking-[0.02em]">
+              <span className="font-display text-[11px] font-semibold tracking-[0.02em]">
                 {label}
               </span>
             </Link>

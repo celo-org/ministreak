@@ -107,7 +107,7 @@ export default function OnboardingCarousel({
         <div className="flex items-center justify-center" aria-hidden>
           {screen.badge}
         </div>
-        <h2 className="font-display font-bold text-2xl text-ink tracking-tight">{screen.title}</h2>
+        <h2 className="font-display font-semibold text-2xl text-ink tracking-tight">{screen.title}</h2>
         <p className="text-ink-mute leading-relaxed max-w-sm">{screen.body}</p>
       </div>
 

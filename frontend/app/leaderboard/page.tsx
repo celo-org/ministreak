@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAccount } from "wagmi";
 import { useCurrentRound } from "@/hooks/useCurrentRound";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
@@ -19,7 +20,7 @@ function PodiumPlayer({ entry, me, win }: { entry: LeaderboardEntry; me: boolean
       >
         {monogram(name)}
       </div>
-      <div className="font-display font-bold text-xs max-w-[80px] truncate">
+      <div className="font-display font-semibold text-xs max-w-[80px] truncate">
         {me ? "You" : name.split("-")[0]}
       </div>
       <div className="text-[10.5px] opacity-90 num">{entry.txCount} pts</div>
@@ -30,10 +31,23 @@ function PodiumPlayer({ entry, me, win }: { entry: LeaderboardEntry; me: boolean
 export default function LeaderboardPage() {
   const { address } = useAccount();
   const { data: round } = useCurrentRound();
-  const displayRoundId = round?.roundId?.toString() || undefined;
-  const { data: leaderboard, isLoading, updatedAt } = useLeaderboard(displayRoundId);
+  const [tab, setTab] = useState<"this" | "last">("this");
 
-  const entries = leaderboard?.entries ?? [];
+  const thisRoundId = round?.roundId?.toString() || undefined;
+  const lastRoundId =
+    round && round.roundId > BigInt(1)
+      ? (round.roundId - BigInt(1)).toString()
+      : undefined;
+
+  const { data: thisBoard, isLoading: thisLoading, updatedAt } =
+    useLeaderboard(thisRoundId);
+  const { data: lastBoard, isLoading: lastLoading } = useLeaderboard(lastRoundId);
+
+  const showLast = tab === "last";
+  const entries = (showLast ? lastBoard?.entries : thisBoard?.entries) ?? [];
+  const isLoading = showLast ? lastLoading : thisLoading;
+  const shownRoundId = showLast ? lastRoundId : thisRoundId;
+
   const isMe = (a: string) => !!address && a.toLowerCase() === address.toLowerCase();
   const [first, second, third] = entries;
 
@@ -46,8 +60,14 @@ export default function LeaderboardPage() {
       </header>
 
       <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display font-bold text-3xl tracking-tight">Board</h1>
-        {round && <span className="pill-muted num">Round #{round.roundId.toString()}</span>}
+        <h1 className="font-display font-semibold text-3xl tracking-tight">Leaderboard</h1>
+        {shownRoundId && <span className="pill-muted num">Round #{shownRoundId}</span>}
+      </div>
+
+      {/* week toggle */}
+      <div className="toggle">
+        <button data-on={!showLast} onClick={() => setTab("this")}>This week</button>
+        <button data-on={showLast} onClick={() => setTab("last")}>Last week</button>
       </div>
 
       {/* podium — top 3 */}
@@ -71,20 +91,26 @@ export default function LeaderboardPage() {
       )}
 
       {/* full board */}
-      <Leaderboard
-        entries={entries}
-        isLoading={isLoading}
-        showPrizes
-        highlightAddress={address}
-        updatedAt={updatedAt}
-      />
+      {showLast && !lastRoundId ? (
+        <div className="card text-center text-ink-mute">No previous round yet.</div>
+      ) : (
+        <Leaderboard
+          entries={entries}
+          isLoading={isLoading}
+          showPrizes
+          highlightAddress={address}
+          updatedAt={showLast ? undefined : updatedAt}
+        />
+      )}
 
       {entries.some((e, i, arr) => i > 0 && arr[i - 1].streak === e.streak) && (
         <p className="text-center text-sm text-ink-mute">
           Ties broken by Score, then unique addresses.
         </p>
       )}
-      <p className="text-center text-xs text-ink-faint">Updates every 30 seconds.</p>
+      <p className="text-center text-xs text-ink-faint">
+        {showLast ? "Final results." : "Updates every 30 seconds."}
+      </p>
     </main>
   );
 }

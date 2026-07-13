@@ -1,0 +1,15 @@
+{
+  "network": "celo",
+  "chainId": "42220",
+  "deployedAt": "2026-04-03T23:11:05.396Z",
+  "deployer": "0x719b645Dd52871F7184132C20Bd8EC0A74829a40",
+  "admin": "0x5F21fd013Ee7D7B723579D4F04df537638f0Ae81",
+  "treasury": "0xaEE5Af2039e4a995b79d3978Fa238735e03000Fd",
+  "oracleHotWallet": "0xc11fF7949772C380cffe6531A1c4379C01621958",
+  "rotatedAt": "2026-06-29",
+  "contracts": {
+    "vault": "0xcd125da0EC85c8414D39fa94011b607C2A5f17e5",
+    "oracle": "0x2c08420187F96a69E0aB64a1507282786E4f474e",
+    "usdt": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"
+  }
+}

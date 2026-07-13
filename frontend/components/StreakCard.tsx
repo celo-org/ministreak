@@ -28,14 +28,14 @@ export default function StreakCard({
   const freezes = profile?.freezeTokens ?? 0;
 
   return (
-    <div className={todayDone ? "card-accent" : "card"}>
+    <div className={`relative overflow-hidden ${todayDone ? "card-accent" : "card"}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="chip chip-amber w-12 h-12 rounded-2xl flex-shrink-0">
             <StreakIcon width={28} height={28} />
           </div>
           <div className="min-w-0">
-            <p className="font-display font-bold text-lg leading-tight">
+            <p className="font-display font-semibold text-lg leading-tight">
               {streak > 0 ? `${streak}-day streak` : "Start your streak today"}
             </p>
             {profile && (
@@ -70,6 +70,7 @@ export default function StreakCard({
           Send a transaction on Celo today to keep your streak alive.
         </div>
       )}
+      <span className="absolute left-5 right-5 bottom-0 h-[3px] rounded-full bg-amber" />
     </div>
   );
 }
