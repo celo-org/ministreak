@@ -1,5 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
-import { decideFreezeCover, getLastValidDays } from "./freeze";
+
+vi.mock("./profileStore", () => ({
+  readProfile: vi.fn(),
+  writeProfile: vi.fn(),
+}));
+
+import { applyFreezeCovers, decideFreezeCover, freezeEnabled, getLastValidDays } from "./freeze";
+import { readProfile, writeProfile } from "./profileStore";
+import type { QualifyingTx, RoundInfo } from "./scanner";
 
 const base = { freezeTokens: 1, freezeUsedRound: null as number | null, currentRound: 7 };
 
@@ -44,5 +52,53 @@ describe("getLastValidDays", () => {
     const map = await getLastValidDays(client, "0xvault" as any, 7n, [A, B]);
     expect(map.get(A.toLowerCase())).toBe(4);
     expect(map.get(B.toLowerCase())).toBe(255);
+  });
+});
+
+const P = "0x1111111111111111111111111111111111111111" as const;
+const VAULT = "0x000000000000000000000000000000000000ba5e" as const;
+
+describe("applyFreezeCovers", () => {
+  function clientWithLastValid(day: number) {
+    return {
+      multicall: vi.fn(async () => [{ status: "success", result: [3, 0, 0, day, false, true] }]),
+    } as any;
+  }
+  const roundInfo = { roundId: 7n, players: [P], vaultAddress: VAULT } as RoundInfo;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("covers a returning player's missed day and consumes a token", async () => {
+    // lastValidDay 2, active again on day 4 (in qualifying) -> cover day 3
+    (readProfile as any).mockResolvedValue({ xp: 300, cursor: null, freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: null });
+    const qualifying: QualifyingTx[] = [{ player: P, roundId: 7n, dayIndex: 4, txCount: 2, uniqueToCount: 1 }];
+    const covered = await applyFreezeCovers(clientWithLastValid(2), VAULT, roundInfo, qualifying);
+    expect(covered).toEqual([{ player: P, roundId: 7n, dayIndex: 3, txCount: 0, uniqueToCount: 0 }]);
+    expect(writeProfile).toHaveBeenCalledWith(P.toLowerCase(), expect.objectContaining({ freezeTokens: 0, freezeUsedRound: 7 }));
+  });
+
+  it("returns no cover when the player has no token", async () => {
+    (readProfile as any).mockResolvedValue({ xp: 0, cursor: null, freezeTokens: 0, lastFreezeMilestone: 0, freezeUsedRound: null });
+    const qualifying: QualifyingTx[] = [{ player: P, roundId: 7n, dayIndex: 4, txCount: 2, uniqueToCount: 1 }];
+    expect(await applyFreezeCovers(clientWithLastValid(2), VAULT, roundInfo, qualifying)).toEqual([]);
+    expect(writeProfile).not.toHaveBeenCalled();
+  });
+
+  it("skips a player whose profile read returns null", async () => {
+    (readProfile as any).mockResolvedValue(null);
+    const qualifying: QualifyingTx[] = [{ player: P, roundId: 7n, dayIndex: 4, txCount: 2, uniqueToCount: 1 }];
+    expect(await applyFreezeCovers(clientWithLastValid(2), VAULT, roundInfo, qualifying)).toEqual([]);
+  });
+});
+
+describe("freezeEnabled", () => {
+  it("defaults on, off only when explicitly 'false'", () => {
+    delete process.env.FREEZE_ENABLED;
+    expect(freezeEnabled()).toBe(true);
+    process.env.FREEZE_ENABLED = "false";
+    expect(freezeEnabled()).toBe(false);
+    delete process.env.FREEZE_ENABLED;
   });
 });

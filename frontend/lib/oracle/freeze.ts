@@ -4,6 +4,8 @@
  * decideFreezeCover is pure; getLastValidDays / applyFreezeCovers do I/O.
  */
 import { type Address, type PublicClient, parseAbi } from "viem";
+import type { QualifyingTx, RoundInfo } from "./scanner";
+import { readProfile, writeProfile } from "./profileStore";
 
 const VAULT_ABI = parseAbi([
   "function getPlayerStats(uint256 roundId, address player) external view returns (uint8 streak, uint32 txCount, uint16 uniqueToCount, uint8 lastValidDay, bool claimed, bool entered)",
@@ -49,8 +51,54 @@ export async function getLastValidDays(
   const map = new Map<string, number>();
   results.forEach((r, i) => {
     if (r.status === "success") {
-      map.set(players[i].toLowerCase(), Number((r.result as unknown[])[3]));
+      map.set(players[i].toLowerCase(), Number(((r.result as any) as unknown[])[3]));
     }
   });
   return map;
+}
+
+/** Streak-freeze on-chain apply is enabled unless FREEZE_ENABLED === "false". */
+export function freezeEnabled(): boolean {
+  return process.env.FREEZE_ENABLED !== "false";
+}
+
+/**
+ * For each returning player with a coverable single-day gap, produce a covered
+ * entry (txCount 0) to bridge the streak and consume one freeze token. A profile
+ * read failure skips the player (never fabricates a cover).
+ */
+export async function applyFreezeCovers(
+  client: PublicClient,
+  vaultAddress: Address,
+  roundInfo: RoundInfo,
+  qualifying: QualifyingTx[]
+): Promise<QualifyingTx[]> {
+  const round = Number(roundInfo.roundId);
+  const lastValid = await getLastValidDays(client, vaultAddress, roundInfo.roundId, roundInfo.players);
+
+  const daysByPlayer = new Map<string, number[]>();
+  for (const q of qualifying) {
+    const key = q.player.toLowerCase();
+    const list = daysByPlayer.get(key);
+    if (list) list.push(q.dayIndex);
+    else daysByPlayer.set(key, [q.dayIndex]);
+  }
+
+  const covered: QualifyingTx[] = [];
+  for (const player of roundInfo.players) {
+    const key = player.toLowerCase();
+    const profile = await readProfile(key);
+    if (!profile) continue;
+    const coverDay = decideFreezeCover({
+      lastValidDay: lastValid.get(key) ?? 255,
+      activeClosedDays: daysByPlayer.get(key) ?? [],
+      freezeTokens: profile.freezeTokens,
+      freezeUsedRound: profile.freezeUsedRound,
+      currentRound: round,
+    });
+    if (coverDay === null) continue;
+    covered.push({ player, roundId: roundInfo.roundId, dayIndex: coverDay, txCount: 0, uniqueToCount: 0 });
+    await writeProfile(key, { ...profile, freezeTokens: profile.freezeTokens - 1, freezeUsedRound: round });
+  }
+  return covered;
 }
