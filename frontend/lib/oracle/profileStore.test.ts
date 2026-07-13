@@ -52,4 +52,20 @@ describe("awardXp", () => {
     await awardXp([entry(A, 0), entry(A, 1)], 7);
     expect((await readProfile(A))!.xp).toBe(25); // 10 then +15
   });
+  it("skips a player (does not clobber accumulated XP) when the KV read errors transiently", async () => {
+    // Seed an existing profile with real accumulated cross-round XP.
+    const seeded: Profile = { xp: 900, cursor: { round: 6, day: 6 } };
+    await writeProfile(A, seeded);
+    vi.clearAllMocks(); // clear the call log from the seed write, keep the store
+
+    // The next kv.get (the awardXp read for this player) blips.
+    (kv.get as any).mockRejectedValueOnce(new Error("kv blip"));
+
+    await awardXp([entry(A, 0), entry(A, 1)], 8);
+
+    // Must not have written anything for this player during this run.
+    expect(kv.set).not.toHaveBeenCalled();
+    // The stored profile must be untouched.
+    expect(await readProfile(A)).toEqual(seeded);
+  });
 });
