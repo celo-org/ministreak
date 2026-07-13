@@ -64,8 +64,10 @@ export function freezeEnabled(): boolean {
 
 /**
  * For each returning player with a coverable single-day gap, produce a covered
- * entry (txCount 0) to bridge the streak and consume one freeze token. A profile
- * read failure skips the player (never fabricates a cover).
+ * entry (txCount 0) to bridge the streak and consume one freeze token. Players
+ * with no qualifying activity this scan are skipped before the KV read (they
+ * can't be a returning player). A profile read/write failure for one player is
+ * caught and skipped so it can't abort the batch (never fabricates a cover).
  */
 export async function applyFreezeCovers(
   client: PublicClient,
@@ -87,18 +89,25 @@ export async function applyFreezeCovers(
   const covered: QualifyingTx[] = [];
   for (const player of roundInfo.players) {
     const key = player.toLowerCase();
-    const profile = await readProfile(key);
-    if (!profile) continue;
-    const coverDay = decideFreezeCover({
-      lastValidDay: lastValid.get(key) ?? 255,
-      activeClosedDays: daysByPlayer.get(key) ?? [],
-      freezeTokens: profile.freezeTokens,
-      freezeUsedRound: profile.freezeUsedRound,
-      currentRound: round,
-    });
-    if (coverDay === null) continue;
-    covered.push({ player, roundId: roundInfo.roundId, dayIndex: coverDay, txCount: 0, uniqueToCount: 0 });
-    await writeProfile(key, { ...profile, freezeTokens: profile.freezeTokens - 1, freezeUsedRound: round });
+    const activeClosedDays = daysByPlayer.get(key);
+    if (!activeClosedDays) continue; // no activity this scan -> can't be a returning player; skip the KV read
+    try {
+      const profile = await readProfile(key);
+      if (!profile) continue; // read error or true miss -> never fabricate a cover
+      const coverDay = decideFreezeCover({
+        lastValidDay: lastValid.get(key) ?? 255,
+        activeClosedDays,
+        freezeTokens: profile.freezeTokens,
+        freezeUsedRound: profile.freezeUsedRound,
+        currentRound: round,
+      });
+      if (coverDay === null) continue;
+      covered.push({ player, roundId: roundInfo.roundId, dayIndex: coverDay, txCount: 0, uniqueToCount: 0 });
+      await writeProfile(key, { ...profile, freezeTokens: profile.freezeTokens - 1, freezeUsedRound: round });
+    } catch (e) {
+      console.warn(`applyFreezeCovers: ${key} failed, skipping: ${(e as Error).message}`);
+      continue;
+    }
   }
   return covered;
 }

@@ -91,6 +91,23 @@ describe("applyFreezeCovers", () => {
     const qualifying: QualifyingTx[] = [{ player: P, roundId: 7n, dayIndex: 4, txCount: 2, uniqueToCount: 1 }];
     expect(await applyFreezeCovers(clientWithLastValid(2), VAULT, roundInfo, qualifying)).toEqual([]);
   });
+
+  it("skips inactive players without reading their profile", async () => {
+    const Q = "0x2222222222222222222222222222222222222222" as const;
+    const roundInfoTwo = { roundId: 7n, players: [P, Q], vaultAddress: VAULT } as RoundInfo;
+    const client = {
+      multicall: vi.fn(async () => [
+        { status: "success", result: [3, 0, 0, 2, false, true] }, // P
+        { status: "success", result: [0, 0, 0, 255, false, true] }, // Q
+      ]),
+    } as any;
+    (readProfile as any).mockResolvedValue({ xp: 300, cursor: null, freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: null });
+    // Only P has a qualifying entry this scan; Q has none.
+    const qualifying: QualifyingTx[] = [{ player: P, roundId: 7n, dayIndex: 4, txCount: 2, uniqueToCount: 1 }];
+    await applyFreezeCovers(client, VAULT, roundInfoTwo, qualifying);
+    expect(readProfile).toHaveBeenCalledWith(P.toLowerCase());
+    expect(readProfile).not.toHaveBeenCalledWith(Q.toLowerCase());
+  });
 });
 
 describe("freezeEnabled", () => {
