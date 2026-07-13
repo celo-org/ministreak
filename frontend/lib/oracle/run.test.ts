@@ -35,6 +35,9 @@ import { applyFreezeCovers } from "./freeze";
 const VAULT = "0x000000000000000000000000000000000000ba5e" as const;
 const ORACLE = "0x000000000000000000000000000000000000dead" as const;
 const A = "0xAAAA000000000000000000000000000000000000" as const;
+// Lowercased, B sorts BEFORE A ("0x1111..." < "0xaaaa..."), so the primary
+// (player) sort key is actually exercised in the multi-player test below.
+const B = "0x1111000000000000000000000000000000000000" as const;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -138,5 +141,49 @@ it("merges freeze covers into the batch, sorted so the covered day precedes the 
 
   const submittedBatch = (batchSubmitStreaks as any).mock.calls[0][3];
   expect(submittedBatch.map((q: any) => q.dayIndex)).toEqual([0, 1]); // covered day 0 before return day 1
+  vi.useRealTimers();
+});
+
+it("sorts a multi-player batch by (player, dayIndex) — not by dayIndex alone", async () => {
+  // Regression guard: a single-player test can't distinguish sort((a,b) => a.dayIndex - b.dayIndex)
+  // from the required sort((a,b) => player.localeCompare(...) || a.dayIndex - b.dayIndex). With two
+  // players whose covered/return dayIndexes are on opposite ends of the range (B high, A low), the
+  // two sort strategies produce different overall orderings, so a regression to dayIndex-only sort
+  // is caught here even though it would still pass the single-player "merges freeze covers" test above.
+  vi.useFakeTimers();
+  vi.setSystemTime(Date.UTC(2026, 0, 11, 12, 0, 0)); // Sun noon -> currentDayIndex 6 for a Mon-00:00 start
+  const start = BigInt(Math.floor(Date.UTC(2026, 0, 5, 0, 0, 0) / 1000));
+  (getCurrentRound as any).mockResolvedValue({
+    roundId: 7n, startTime: start, endTime: start + BigInt(7 * 86400), players: [A, B], vaultAddress: VAULT,
+  });
+  // B's return day (5) is high; A's return day (1) is low.
+  (scanAllPlayers as any).mockResolvedValue([
+    { player: B, roundId: 7n, dayIndex: 5, txCount: 2, uniqueToCount: 2 },
+    { player: A, roundId: 7n, dayIndex: 1, txCount: 2, uniqueToCount: 2 },
+  ]);
+  (getPriorParticipants as any).mockResolvedValue({ prev: new Set(), prev2: new Set() });
+  (applyLoyalty as any).mockImplementation((q: any[]) => q);
+  // B's freeze cover (4) and A's freeze cover (0), matching each player's return day.
+  (applyFreezeCovers as any).mockResolvedValue([
+    { player: B, roundId: 7n, dayIndex: 4, txCount: 0, uniqueToCount: 0 },
+    { player: A, roundId: 7n, dayIndex: 0, txCount: 0, uniqueToCount: 0 },
+  ]);
+  (checkAlreadySubmitted as any).mockResolvedValue(new Set());
+  (batchSubmitStreaks as any).mockResolvedValue("0xhash");
+
+  await runOracleScan({} as any, {} as any, { vaultAddress: VAULT, oracleAddress: ORACLE, apiKey: "k" });
+
+  const submittedBatch = (batchSubmitStreaks as any).mock.calls[0][3];
+  // Correct (player, then dayIndex) order: B's pair (lower lowercased address) first, each
+  // player's covered day immediately before its own return day.
+  expect(submittedBatch.map((q: any) => [q.player, q.dayIndex])).toEqual([
+    [B, 4],
+    [B, 5],
+    [A, 0],
+    [A, 1],
+  ]);
+  // A naive `sort((a,b) => a.dayIndex - b.dayIndex)` (dropping the player key) would instead
+  // yield [A:0, A:1, B:4, B:5] — a different array from the one asserted above — so this test
+  // fails against that regression while the single-player "merges freeze covers" test would not.
   vi.useRealTimers();
 });
