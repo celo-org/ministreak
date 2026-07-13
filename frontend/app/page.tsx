@@ -19,10 +19,13 @@ import WalletBadge from "@/components/WalletBadge";
 import LegalLinks from "@/components/Footer";
 import { roundDayIndex } from "@/lib/roundDay";
 import { useState } from "react";
+import OnboardingCarousel from "@/components/OnboardingCarousel";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 export default function HomePage() {
   const { address, isConnected } = useAccount();
   const [howToOpen, setHowToOpen] = useState(false);
+  const onboarding = useOnboarding();
 
   const { data: round, isLoading: roundLoading, isError: roundError, refetch: refetchRound } =
     useCurrentRound();
@@ -64,6 +67,7 @@ export default function HomePage() {
 
   return (
     <main className="pt-10 space-y-6">
+      <OnboardingCarousel open={onboarding.open} onDismiss={onboarding.dismiss} />
       {/* Masthead — logo + wallet on one line, tagline below */}
       <header className="space-y-0.5">
         <div className="flex items-center justify-between gap-3">
@@ -218,6 +222,12 @@ export default function HomePage() {
             ))}
           </ol>
         )}
+        <button
+          onClick={onboarding.show}
+          className="mt-4 text-sm text-forest underline"
+        >
+          Replay intro
+        </button>
       </section>
 
       {/* Inline legal + support (replaces the global footer divider) */}
