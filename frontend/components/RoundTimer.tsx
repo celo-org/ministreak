@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 interface RoundTimerProps {
   endTime: bigint | undefined;
+  variant?: "card" | "hero";
 }
 
 function formatDuration(seconds: number) {
@@ -19,8 +20,9 @@ function formatDuration(seconds: number) {
   };
 }
 
-export default function RoundTimer({ endTime }: RoundTimerProps) {
+export default function RoundTimer({ endTime, variant = "card" }: RoundTimerProps) {
   const [secondsLeft, setSecondsLeft] = useState<number>(0);
+  const hero = variant === "hero";
 
   useEffect(() => {
     if (!endTime) return;
@@ -36,13 +38,34 @@ export default function RoundTimer({ endTime }: RoundTimerProps) {
   const { days, hours, minutes, seconds } = formatDuration(secondsLeft);
 
   if (!endTime) {
-    return <div className="h-20 bg-paper-tint rounded-2xl animate-pulse" />;
+    return hero ? null : <div className="h-20 bg-paper-tint rounded-2xl animate-pulse" />;
   }
 
   if (secondsLeft === 0) {
-    return (
+    return hero ? (
+      <p className="text-xs opacity-90">Round ended — awaiting resolution</p>
+    ) : (
       <div className="card text-center">
         <p className="eyebrow">Round ended — awaiting resolution</p>
+      </div>
+    );
+  }
+
+  // Hero variant: compact translucent chips inside the pot gradient.
+  if (hero) {
+    const segs = [
+      { label: "Days", value: days },
+      { label: "Hrs", value: hours },
+      { label: "Min", value: minutes },
+    ];
+    return (
+      <div className="grid grid-cols-3 gap-1.5">
+        {segs.map(({ label, value }) => (
+          <div key={label} className="rounded-xl bg-white/[0.16] py-1.5 text-center">
+            <span className="block font-display font-bold text-lg num leading-none">{value}</span>
+            <span className="block text-[9px] uppercase tracking-[0.08em] opacity-85 mt-0.5">{label}</span>
+          </div>
+        ))}
       </div>
     );
   }

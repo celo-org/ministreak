@@ -29,8 +29,7 @@ export default function HomePage() {
   const [howToOpen, setHowToOpen] = useState(false);
   const onboarding = useOnboarding();
 
-  const { data: round, isLoading: roundLoading, isError: roundError, refetch: refetchRound } =
-    useCurrentRound();
+  const { data: round, isError: roundError, refetch: refetchRound } = useCurrentRound();
 
   const { stats, isLoading: statsLoading } = usePlayerStats(round?.roundId, address);
 
@@ -96,7 +95,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Pot hero */}
+      {/* Pot hero — round, countdown, and entry all in one card */}
       <section
         className="relative overflow-hidden rounded-[22px] p-6 text-white min-h-[168px]"
         style={{
@@ -104,10 +103,15 @@ export default function HomePage() {
           boxShadow: "0 16px 30px -20px rgba(15,74,42,0.8)",
         }}
       >
-        <div className="absolute -right-5 -bottom-7 opacity-[0.13] pointer-events-none">
+        <div className="absolute -right-5 -bottom-8 opacity-[0.13] pointer-events-none">
           <StreakIcon width={150} height={150} />
         </div>
-        {round ? (
+        {roundError ? (
+          <>
+            <p className="font-display font-bold text-xl">Contract unreachable</p>
+            <p className="text-xs opacity-90 mt-1">Connect to Celo and try again.</p>
+          </>
+        ) : round ? (
           <>
             <p className="text-[10px] font-bold uppercase tracking-[0.13em] opacity-90">
               Round #{round.roundId.toString()} {round.isOpen ? "· Open" : "· Closed"}
@@ -120,39 +124,45 @@ export default function HomePage() {
               {round.playerCount.toString()}{" "}
               {Number(round.playerCount) === 1 ? "player" : "players"} in the pot
             </p>
+
+            <div className="mt-4">
+              <RoundTimer endTime={round.endTime} variant="hero" />
+            </div>
+
+            <div className="mt-3.5">
+              {isConnected ? (
+                <EntryButton
+                  variant="hero"
+                  roundId={round.roundId}
+                  isEntered={stats?.entered ?? false}
+                  isOpen={round.isOpen}
+                  onSuccess={refetchRound}
+                />
+              ) : (
+                <div className="text-center rounded-2xl bg-white/15 text-white/85 font-display font-bold py-3">
+                  Connect a wallet to enter
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <div className="animate-pulse space-y-3" aria-hidden>
             <div className="h-3 w-24 rounded bg-white/25" />
             <div className="h-11 w-44 rounded bg-white/25" />
             <div className="h-3 w-32 rounded bg-white/25" />
+            <div className="h-9 w-full rounded-2xl bg-white/20 mt-2" />
           </div>
         )}
       </section>
-
-      {/* Round timer */}
-      <RoundTimer endTime={round?.endTime} />
 
       {/* Refund claim (previous round, only if claimable) */}
       {isConnected && refundInfo.claimable && refundInfo.roundId !== null && (
         <ClaimRefundCard roundId={refundInfo.roundId} onSuccess={refetchRefund} />
       )}
 
-      {/* Streak card (if entered) */}
-      {isConnected && stats?.entered && (
-        <StreakCard
-          streak={Number(stats.streak)}
-          todayDone={todayDone || hasActivityToday}
-          optimistic={optimisticToday}
-          isLoading={statsLoading}
-          profile={profile ?? undefined}
-          todayXp={todayXp}
-        />
-      )}
-
       {/* Daily XP — make the everyday reward loop obvious */}
       {isConnected && stats?.entered && (
-        <div className="card !p-4 relative overflow-hidden">
+        <div className="card !p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
               <div className="chip chip-forest w-[30px] h-[30px]"><ScoreIcon /></div>
@@ -177,6 +187,9 @@ export default function HomePage() {
                   >
                     {d + 1}
                   </div>
+                  <span className={`text-[8.5px] num ${today ? "text-amber font-bold" : "text-ink-mute"}`}>
+                    +{xpForDay(d + 1)}
+                  </span>
                 </div>
               );
             })}
@@ -185,34 +198,16 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Entry CTA */}
-      {isConnected ? (
-        roundLoading || !round ? (
-          roundError ? (
-            <div className="card text-center space-y-2">
-              <p className="text-coral font-semibold">Contract unreachable</p>
-              <p className="text-ink-mute text-sm">
-                Make sure you’re connected to Celo and the contract is deployed.
-              </p>
-            </div>
-          ) : (
-            <button className="btn-secondary cursor-wait" disabled>
-              Connecting…
-            </button>
-          )
-        ) : (
-          <EntryButton
-            roundId={round.roundId}
-            isEntered={stats?.entered ?? false}
-            isOpen={round.isOpen}
-            onSuccess={refetchRound}
-          />
-        )
-      ) : (
-        <div className="card text-center space-y-3">
-          <p className="text-ink-mute">Connect a wallet to enter this week.</p>
-          <WalletBadge />
-        </div>
+      {/* Streak card (if entered) */}
+      {isConnected && stats?.entered && (
+        <StreakCard
+          streak={Number(stats.streak)}
+          todayDone={todayDone || hasActivityToday}
+          optimistic={optimisticToday}
+          isLoading={statsLoading}
+          profile={profile ?? undefined}
+          todayXp={todayXp}
+        />
       )}
 
       {/* Admin: resolve current round */}
