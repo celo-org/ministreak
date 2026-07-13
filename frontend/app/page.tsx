@@ -27,7 +27,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 export default function HomePage() {
   const { address, isConnected } = useAccount();
   const [howToOpen, setHowToOpen] = useState(false);
-  const onboarding = useOnboarding();
+  const onboarding = useOnboarding(address);
 
   const { data: round, isError: roundError, refetch: refetchRound } = useCurrentRound();
 
