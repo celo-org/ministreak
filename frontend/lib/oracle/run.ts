@@ -16,6 +16,7 @@ import { checkAlreadySubmitted, batchSubmitStreaks } from "./submitter";
 import { getPriorParticipants, loyaltyMultiplierFor, applyLoyalty } from "./loyalty";
 import { computeProvisional } from "./provisional";
 import { writeProvisional } from "./provisionalStore";
+import { awardXp } from "./profileStore";
 import { roundDayIndex } from "@/lib/roundDay";
 
 export interface OracleRunResult {
@@ -97,6 +98,14 @@ export async function runOracleScan(
   const qualifying = allWithLoyalty.filter((q) => q.dayIndex < currentDayIndex);
   if (qualifying.length === 0) {
     return { ...base, noActivity };
+  }
+
+  // Award retention XP for closed active days (KV-backed, non-fatal). Idempotent
+  // per player via a stored cursor, so it is safe to run on every scan.
+  try {
+    await awardXp(qualifying, Number(roundInfo.roundId));
+  } catch (e) {
+    console.warn(`Oracle: XP award failed: ${(e as Error).message}`);
   }
 
   console.log("Oracle: checking on-chain submission status...");
