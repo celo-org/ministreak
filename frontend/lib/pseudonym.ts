@@ -58,3 +58,13 @@ export function pseudonymFor(address: string | undefined | null): string {
 export function shortAddress(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
+
+/**
+ * Two-letter monogram for avatars, from a pseudonym's capital letters
+ * (e.g. "SwiftOtter-7F2A" -> "SO"). Falls back to the first two letters.
+ */
+export function monogram(name: string): string {
+  const caps = name.replace(/-.*/, "").match(/[A-Z]/g);
+  if (caps && caps.length >= 2) return (caps[0] + caps[1]).toUpperCase();
+  return name.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "?";
+}

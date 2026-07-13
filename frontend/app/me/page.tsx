@@ -5,15 +5,9 @@ import { useCurrentRound } from "@/hooks/useCurrentRound";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { useProfile } from "@/hooks/useProfile";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
-import { pseudonymFor, shortAddress } from "@/lib/pseudonym";
+import { pseudonymFor, shortAddress, monogram } from "@/lib/pseudonym";
 import { StreakIcon, ScoreIcon, FreezeIcon, TrophyIcon } from "@/components/icons";
 import WalletBadge from "@/components/WalletBadge";
-
-function monogram(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
 
 export default function MePage() {
   const { address, isConnected } = useAccount();
