@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface Screen {
   glyph: string;
@@ -61,6 +61,10 @@ export default function OnboardingCarousel({
   const [index, setIndex] = useState(0);
   const touchStartX = useRef(0);
 
+  useEffect(() => {
+    if (open) setIndex(0);
+  }, [open]);
+
   if (!open) return null;
 
   const isLast = index === SCREENS.length - 1;
@@ -73,7 +77,7 @@ export default function OnboardingCarousel({
       className="fixed inset-0 z-50 flex flex-col bg-paper"
       role="dialog"
       aria-modal="true"
-      aria-label="Welcome to MiniStreak"
+      aria-label={screen.title}
       onTouchStart={(e) => {
         touchStartX.current = e.touches[0].clientX;
       }}

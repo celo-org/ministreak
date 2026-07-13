@@ -41,4 +41,17 @@ describe("OnboardingCarousel", () => {
     fireEvent.click(screen.getByRole("button", { name: /Skip/i }));
     expect(onDismiss).toHaveBeenCalledOnce();
   });
+
+  it("restarts at the first screen when reopened after a close", () => {
+    const { rerender } = render(<OnboardingCarousel open onDismiss={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /Next/i })); // -> screen 2
+    fireEvent.click(screen.getByRole("button", { name: /Next/i })); // -> screen 3
+    expect(screen.getByText(/How you win/i)).toBeInTheDocument();
+
+    rerender(<OnboardingCarousel open={false} onDismiss={() => {}} />); // close
+    rerender(<OnboardingCarousel open onDismiss={() => {}} />); // reopen (e.g. Replay intro)
+
+    expect(screen.getByText(/Welcome to MiniStreak/i)).toBeInTheDocument();
+    expect(screen.queryByText(/How you win/i)).not.toBeInTheDocument();
+  });
 });
