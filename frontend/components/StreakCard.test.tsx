@@ -45,4 +45,26 @@ describe("StreakCard", () => {
     render(<StreakCard streak={3} todayDone optimistic />);
     expect(screen.getByText(/confirming/i)).toBeInTheDocument();
   });
+
+  it("shows the Level badge and XP bar when a profile is provided", () => {
+    render(
+      <StreakCard
+        streak={3}
+        todayDone
+        profile={{ level: 2, xpIntoLevel: 75, xpForNextLevel: 150 }}
+      />
+    );
+    expect(screen.getByText(/Lv\s*2/i)).toBeInTheDocument();
+    expect(screen.getByText(/75\s*\/\s*150\s*XP/i)).toBeInTheDocument();
+  });
+
+  it("renders no Level badge without a profile", () => {
+    render(<StreakCard streak={3} todayDone />);
+    expect(screen.queryByText(/Lv\s*\d/i)).not.toBeInTheDocument();
+  });
+
+  it("shows a today-XP chip when todayXp is set", () => {
+    render(<StreakCard streak={0} todayDone optimistic todayXp={15} />);
+    expect(screen.getByText(/\+15\s*XP/i)).toBeInTheDocument();
+  });
 });
