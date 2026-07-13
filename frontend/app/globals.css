@@ -19,6 +19,10 @@
     --gold-tint: #FBEFC9;
     --coral: #C44536;
     --coral-tint: #F8DDD7;
+    /* Candy accents — small icon-chip / stat-accent use only. */
+    --amber: #E39A2E; --amber-tint: #F7E7C8;
+    --sky: #3E93CE; --sky-tint: #DCEBF6;
+    --berry: #CF5C86; --berry-tint: #F6DEE8;
   }
 
   html {
@@ -37,15 +41,15 @@
   }
 
   h1, h2, h3, h4 {
-    @apply font-sans text-ink;
+    @apply font-display text-ink;
     letter-spacing: -0.02em;
     font-weight: 700;
   }
 
-  /* Display scale — sized for hierarchy via weight and size, not font swap */
+  /* Display scale — rounded Fredoka, sized for hierarchy via weight and size */
   .display-xl, .display-lg, .display-md {
-    @apply font-sans num;
-    letter-spacing: -0.03em;
+    @apply font-display num;
+    letter-spacing: -0.02em;
     line-height: 1;
   }
   .display-xl { font-size: clamp(56px, 14vw, 84px); font-weight: 700; }
@@ -62,15 +66,16 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center font-sans font-semibold
-           py-3.5 px-6 rounded-full w-full text-center
-           bg-forest text-paper transition-all duration-150
-           active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed;
-    font-size: 15px;
-    box-shadow: 0 1px 0 rgba(27,26,23,0.10), 0 4px 12px -4px rgba(27, 107, 63, 0.45);
+    @apply inline-flex items-center justify-center font-display font-bold
+           py-3.5 px-6 rounded-2xl w-full text-center
+           bg-forest text-paper transition-transform duration-100
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    font-size: 16px;
+    box-shadow: 0 4px 0 var(--forest-deep);
   }
-  .btn-primary:hover:not(:disabled) {
-    background-color: var(--forest-deep);
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--forest-deep);
   }
 
   .btn-secondary {
@@ -120,7 +125,64 @@
   .hairline { @apply border-t border-rule; }
 
   .num {
+    @apply font-display;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" on, "lnum" on;
   }
+
+  /* ── revamp primitives ─────────────────────────────────────────── */
+
+  /* rounded-square colored icon holder */
+  .chip {
+    @apply grid place-items-center text-white rounded-xl;
+    width: 34px; height: 34px;
+    background: var(--chip, var(--forest));
+    box-shadow: 0 3px 0 rgba(0,0,0,0.12);
+  }
+  .chip > svg { width: 20px; height: 20px; }
+  .chip-amber { --chip: var(--amber); }
+  .chip-sky { --chip: var(--sky); }
+  .chip-berry { --chip: var(--berry); }
+  .chip-gold { --chip: var(--gold-bright); }
+  .chip-forest { --chip: var(--forest); }
+
+  /* stat card: chip + big number + label + accent underline */
+  .stat {
+    @apply relative overflow-hidden rounded-[19px] p-3.5;
+    background: #FFFDF7;
+    box-shadow: 0 1px 0 var(--rule), 0 12px 24px -20px rgba(27,26,23,0.5), inset 0 0 0 1px var(--rule);
+  }
+  .stat::after {
+    content: ""; position: absolute; left: 14px; right: 14px; bottom: 0;
+    height: 3px; border-radius: 3px; background: var(--chip, var(--forest));
+  }
+  .stat-tint-sky { background: var(--sky-tint); }
+  .stat-tint-berry { background: var(--berry-tint); }
+  .stat-big { @apply font-display; font-weight: 700; font-size: 28px; line-height: 1; margin: 11px 0 2px; }
+  .stat-big small { font-size: 14px; color: var(--ink-mute); font-weight: 600; }
+  .stat-sub { font-size: 10.5px; color: var(--ink-mute); }
+  .stat-lab { font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); margin-top: 6px; }
+
+  /* pill with a colored icon dot + number (home header) */
+  .pill-stat { @apply inline-flex items-center gap-1.5 bg-white rounded-full pl-1.5 pr-2.5 py-1; box-shadow: inset 0 0 0 1px var(--rule); }
+  .pill-stat .dot { @apply grid place-items-center text-white rounded-full; width: 22px; height: 22px; background: var(--chip, var(--forest)); }
+  .pill-stat .dot > svg { width: 14px; height: 14px; }
+  .pill-stat b { @apply font-display num; font-weight: 700; font-size: 13px; }
+
+  /* segmented toggle */
+  .toggle { @apply flex bg-white rounded-2xl p-1; box-shadow: inset 0 0 0 1px var(--rule); }
+  .toggle > button { @apply flex-1 text-center font-display font-bold rounded-xl py-2 text-ink-mute; font-size: 13px; }
+  .toggle > button[data-on="true"] { @apply bg-forest text-white; box-shadow: 0 3px 0 var(--forest-deep); }
+
+  /* avatar circle + monogram (sized per use) */
+  .avatar { @apply relative grid place-items-center rounded-full font-display font-bold text-white bg-forest; box-shadow: inset 0 0 0 3px #fff, 0 0 0 1px var(--rule); }
+  .lvl { @apply absolute font-display font-bold text-white rounded-full; bottom: -6px; right: -6px; font-size: 11px; letter-spacing: 0.05em; padding: 4px 10px; background: var(--amber); box-shadow: 0 3px 0 #b97a1e, 0 0 0 3px var(--paper); }
+
+  /* XP / progress bar */
+  .bar { @apply rounded-full overflow-hidden; height: 11px; background: var(--paper-deep); box-shadow: inset 0 1px 2px rgba(27,26,23,0.12); }
+  .bar > i { @apply block h-full rounded-full; background: linear-gradient(90deg, #2b8a54, var(--forest)); }
+
+  /* leaderboard row */
+  .lbrow { @apply flex items-center gap-2.5 rounded-2xl px-3 py-2.5; background: #FFFDF7; box-shadow: 0 1px 0 var(--rule), 0 8px 18px -18px rgba(27,26,23,0.5), inset 0 0 0 1px var(--rule); }
+  .lbrow.me { background: var(--forest-tint); box-shadow: inset 0 0 0 1px rgba(27,107,63,0.35); }
 }

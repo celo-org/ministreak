@@ -1,13 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, DM_Sans, JetBrains_Mono } from "next/font/google";
+import { Fredoka, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
 // Self-hosted via next/font: no render-blocking request, and the generated
 // size-adjust fallback metrics eliminate font-swap layout shift (CLS).
-const fraunces = Fraunces({
+// Fredoka (rounded) carries the display role — headings + numbers — for the
+// chunky, friendly look; DM Sans stays the body face.
+const fredoka = Fredoka({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-fredoka",
   display: "swap",
 });
 const dmSans = DM_Sans({
@@ -62,7 +65,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
+      className={`${fredoka.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         {/* The LCP element (round pot) waits on a JSON-RPC read to the Celo
