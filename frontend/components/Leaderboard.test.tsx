@@ -24,23 +24,22 @@ describe("Leaderboard", () => {
     expect(screen.getByText(/No players yet/)).toBeInTheDocument();
   });
 
-  it("renders medals for the top 3 ranks", () => {
-    render(
+  it("shows a medal icon for rank 1 and numbers for the rest (no emoji)", () => {
+    const { container } = render(
       <Leaderboard
         entries={[
           entry({ address: "0xaaa0000000000000000000000000000000000001", rank: 1 }),
           entry({ address: "0xbbb0000000000000000000000000000000000002", rank: 2 }),
           entry({ address: "0xccc0000000000000000000000000000000000003", rank: 3 }),
-          entry({ address: "0xddd0000000000000000000000000000000000004", rank: 4 }),
         ]}
         showPrizes={false}
       />
     );
-    expect(screen.getByText("🥇")).toBeInTheDocument();
-    expect(screen.getByText("🥈")).toBeInTheDocument();
-    expect(screen.getByText("🥉")).toBeInTheDocument();
-    // rank 4 shows the number, not a medal
-    expect(screen.getByText("4")).toBeInTheDocument();
+    // rank 1 renders the medal SVG; ranks 2 & 3 render their number.
+    expect(container.querySelector("svg")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.queryByText("🥇")).not.toBeInTheDocument();
   });
 
   it("labels the highlighted address as 'You'", () => {

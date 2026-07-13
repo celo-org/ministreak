@@ -68,3 +68,11 @@ export function monogram(name: string): string {
   if (caps && caps.length >= 2) return (caps[0] + caps[1]).toUpperCase();
   return name.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "?";
 }
+
+/** Deterministic avatar circle colour (CSS var) from an address. */
+const AVATAR_COLORS = ["var(--forest)", "var(--amber)", "var(--sky)", "var(--berry)"];
+export function avatarColor(address: string): string {
+  let s = 0;
+  for (const ch of address.toLowerCase()) s = (s + ch.charCodeAt(0)) % 9973;
+  return AVATAR_COLORS[s % AVATAR_COLORS.length];
+}
