@@ -45,7 +45,8 @@ export default function StreakCard({
                   <>
                     <span className="text-ink-faint">·</span>
                     <span className="inline-flex items-center gap-1 text-berry font-semibold num">
-                      <FreezeIcon width={12} height={12} /> {freezes} banked
+                      <FreezeIcon width={12} height={12} /> {freezes}{" "}
+                      {freezes === 1 ? "freeze" : "freezes"} banked
                     </span>
                   </>
                 )}

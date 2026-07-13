@@ -103,7 +103,10 @@ export default function OnboardingCarousel({
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">
+      <div
+        key={index}
+        className="onb-slide flex-1 flex flex-col items-center justify-center px-8 text-center gap-4"
+      >
         <div className="flex items-center justify-center" aria-hidden>
           {screen.badge}
         </div>
@@ -111,13 +114,32 @@ export default function OnboardingCarousel({
         <p className="text-ink-mute leading-relaxed max-w-sm">{screen.body}</p>
       </div>
 
-      <div className="flex items-center justify-center gap-2 pb-4">
-        {SCREENS.map((_, i) => (
-          <span
-            key={i}
-            className={`h-1.5 w-1.5 rounded-full ${i === index ? "bg-forest" : "bg-paper-deep"}`}
-          />
-        ))}
+      <div className="flex flex-col items-center gap-3 pb-4">
+        {!isLast && (
+          <button
+            onClick={next}
+            aria-label="Continue"
+            className="grid place-items-center w-11 h-11 rounded-full bg-forest text-white shadow-[0_3px_0_var(--forest-deep)] transition-transform active:translate-y-[2px]"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
+        <div className="flex items-center justify-center gap-2">
+          {SCREENS.map((_, i) => (
+            <span
+              key={i}
+              className={`h-1.5 w-1.5 rounded-full ${i === index ? "bg-forest" : "bg-paper-deep"}`}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="p-6">

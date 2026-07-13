@@ -185,4 +185,14 @@
   /* leaderboard row */
   .lbrow { @apply flex items-center gap-2.5 rounded-2xl px-3 py-2.5; background: #FFFDF7; box-shadow: 0 1px 0 var(--rule), 0 8px 18px -18px rgba(27,26,23,0.5), inset 0 0 0 1px var(--rule); }
   .lbrow.me { background: var(--forest-tint); box-shadow: inset 0 0 0 1px rgba(27,107,63,0.35); }
+
+  /* onboarding — gentle slide-in per screen */
+  .onb-slide { animation: onbSlide 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+  @keyframes onbSlide {
+    from { opacity: 0; transform: translateX(22px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .onb-slide { animation: none; }
+  }
 }

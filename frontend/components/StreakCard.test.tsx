@@ -47,7 +47,7 @@ describe("StreakCard", () => {
   it("shows the level and freeze count when a profile is provided", () => {
     render(<StreakCard streak={3} todayDone profile={{ level: 2, freezeTokens: 2 }} />);
     expect(screen.getByText(/Lv\s*2/)).toBeInTheDocument();
-    expect(screen.getByText(/2 banked/)).toBeInTheDocument();
+    expect(screen.getByText(/2 freezes banked/)).toBeInTheDocument();
   });
 
   it("renders no level without a profile", () => {
