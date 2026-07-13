@@ -16,12 +16,16 @@ vi.mock("./loyalty", () => ({
 vi.mock("./provisionalStore", () => ({
   writeProvisional: vi.fn(),
 }));
+vi.mock("./profileStore", () => ({
+  awardXp: vi.fn(),
+}));
 
 import { runOracleScan } from "./run";
 import { getCurrentRound, scanAllPlayers } from "./scanner";
 import { checkAlreadySubmitted, batchSubmitStreaks } from "./submitter";
 import { getPriorParticipants, applyLoyalty } from "./loyalty";
 import { writeProvisional } from "./provisionalStore";
+import { awardXp } from "./profileStore";
 
 const VAULT = "0x000000000000000000000000000000000000ba5e" as const;
 const ORACLE = "0x000000000000000000000000000000000000dead" as const;
@@ -97,6 +101,11 @@ it("submits only closed days and writes today's provisional to KV", async () => 
   expect(batchSubmitStreaks).toHaveBeenCalledWith({}, {}, ORACLE, [
     { player: A, roundId: 7n, dayIndex: 1, txCount: 2, uniqueToCount: 2 },
   ]);
+  // XP awarded for the closed day(s) only, with the numeric round id.
+  expect(awardXp).toHaveBeenCalledWith(
+    [{ player: A, roundId: 7n, dayIndex: 1, txCount: 2, uniqueToCount: 2 }],
+    7
+  );
   // provisional captured today's (day 2) score
   const snap = (writeProvisional as any).mock.calls[0][0];
   expect(snap.dayIndex).toBe(2);

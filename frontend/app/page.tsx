@@ -7,6 +7,8 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePreviousRoundRefund } from "@/hooks/usePreviousRoundRefund";
 import { useTodayActivity } from "@/hooks/useTodayActivity";
+import { useProfile } from "@/hooks/useProfile";
+import { xpForDay } from "@/lib/xp";
 import StreakCard from "@/components/StreakCard";
 import RoundTimer from "@/components/RoundTimer";
 import EntryButton from "@/components/EntryButton";
@@ -45,6 +47,10 @@ export default function HomePage() {
 
   const { hasActivityToday } = useTodayActivity(address, round);
   const optimisticToday = hasActivityToday && !todayDone;
+
+  const { profile } = useProfile(address);
+  // Projected XP for today, shown while it's still optimistic (finalizes at day-close).
+  const todayXp = optimisticToday ? xpForDay(Number(stats?.streak ?? 0) + 1) : undefined;
 
   const { data: leaderboard, isLoading: lbLoading, updatedAt: lbUpdatedAt } =
     useLeaderboard(round?.roundId?.toString());
@@ -120,6 +126,8 @@ export default function HomePage() {
           todayDone={todayDone || hasActivityToday}
           optimistic={optimisticToday}
           isLoading={statsLoading}
+          profile={profile ?? undefined}
+          todayXp={todayXp}
         />
       )}
 
