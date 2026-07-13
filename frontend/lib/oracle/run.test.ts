@@ -19,6 +19,10 @@ vi.mock("./provisionalStore", () => ({
 vi.mock("./profileStore", () => ({
   awardXp: vi.fn(),
 }));
+vi.mock("./freeze", () => ({
+  applyFreezeCovers: vi.fn(async () => []),
+  freezeEnabled: vi.fn(() => true),
+}));
 
 import { runOracleScan } from "./run";
 import { getCurrentRound, scanAllPlayers } from "./scanner";
@@ -26,6 +30,7 @@ import { checkAlreadySubmitted, batchSubmitStreaks } from "./submitter";
 import { getPriorParticipants, applyLoyalty } from "./loyalty";
 import { writeProvisional } from "./provisionalStore";
 import { awardXp } from "./profileStore";
+import { applyFreezeCovers } from "./freeze";
 
 const VAULT = "0x000000000000000000000000000000000000ba5e" as const;
 const ORACLE = "0x000000000000000000000000000000000000dead" as const;
@@ -111,5 +116,27 @@ it("submits only closed days and writes today's provisional to KV", async () => 
   expect(snap.dayIndex).toBe(2);
   expect(snap.players[A.toLowerCase()]).toMatchObject({ todayScore: 5, active: true });
 
+  vi.useRealTimers();
+});
+
+it("merges freeze covers into the batch, sorted so the covered day precedes the return day", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(Date.UTC(2026, 0, 7, 12, 0, 0)); // currentDayIndex 2 for a Mon-00:00 start
+  const start = BigInt(Math.floor(Date.UTC(2026, 0, 5, 0, 0, 0) / 1000));
+  (getCurrentRound as any).mockResolvedValue({
+    roundId: 7n, startTime: start, endTime: start + BigInt(7 * 86400), players: [A], vaultAddress: VAULT,
+  });
+  // return day 1 is the only closed active day; freeze covers day 0
+  (scanAllPlayers as any).mockResolvedValue([{ player: A, roundId: 7n, dayIndex: 1, txCount: 2, uniqueToCount: 2 }]);
+  (getPriorParticipants as any).mockResolvedValue({ prev: new Set(), prev2: new Set() });
+  (applyLoyalty as any).mockImplementation((q: any[]) => q);
+  (applyFreezeCovers as any).mockResolvedValue([{ player: A, roundId: 7n, dayIndex: 0, txCount: 0, uniqueToCount: 0 }]);
+  (checkAlreadySubmitted as any).mockResolvedValue(new Set());
+  (batchSubmitStreaks as any).mockResolvedValue("0xhash");
+
+  await runOracleScan({} as any, {} as any, { vaultAddress: VAULT, oracleAddress: ORACLE, apiKey: "k" });
+
+  const submittedBatch = (batchSubmitStreaks as any).mock.calls[0][3];
+  expect(submittedBatch.map((q: any) => q.dayIndex)).toEqual([0, 1]); // covered day 0 before return day 1
   vi.useRealTimers();
 });
