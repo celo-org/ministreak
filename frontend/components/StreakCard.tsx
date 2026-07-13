@@ -7,8 +7,7 @@ interface StreakCardProps {
   todayDone: boolean;
   optimistic?: boolean;
   isLoading?: boolean;
-  profile?: { level: number; xpIntoLevel: number; xpForNextLevel: number; freezeTokens: number };
-  todayXp?: number;
+  profile?: { level: number; freezeTokens: number };
 }
 
 export default function StreakCard({
@@ -17,36 +16,44 @@ export default function StreakCard({
   optimistic,
   isLoading,
   profile,
-  todayXp,
 }: StreakCardProps) {
   if (isLoading) {
     return (
       <div className="card animate-pulse">
-        <div className="h-20 bg-paper-tint rounded-xl" />
+        <div className="h-16 bg-paper-tint rounded-xl" />
       </div>
     );
   }
 
-  const pct = profile
-    ? Math.min(100, Math.round((profile.xpIntoLevel / Math.max(1, profile.xpForNextLevel)) * 100))
-    : 0;
+  const freezes = profile?.freezeTokens ?? 0;
 
   return (
     <div className={todayDone ? "card-accent" : "card"}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="chip chip-amber w-11 h-11 rounded-2xl">
-            <StreakIcon width={26} height={26} />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="chip chip-amber w-12 h-12 rounded-2xl flex-shrink-0">
+            <StreakIcon width={28} height={28} />
           </div>
-          <div>
-            <p className="eyebrow">Current streak</p>
-            <p className="font-display font-bold text-[38px] num leading-none mt-0.5">{streak}</p>
-            <p className="text-ink-mute text-xs mt-0.5">
-              {streak === 1 ? "day" : "days"} in a row
+          <div className="min-w-0">
+            <p className="font-display font-bold text-lg leading-tight">
+              {streak > 0 ? `${streak}-day streak` : "Start your streak today"}
             </p>
+            {profile && (
+              <p className="text-ink-mute text-xs mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span className="num">Lv {profile.level}</span>
+                {freezes > 0 && (
+                  <>
+                    <span className="text-ink-faint">·</span>
+                    <span className="inline-flex items-center gap-1 text-berry font-semibold num">
+                      <FreezeIcon width={12} height={12} /> {freezes} banked
+                    </span>
+                  </>
+                )}
+              </p>
+            )}
           </div>
         </div>
-        <div className="text-right">
+        <div className="flex-shrink-0">
           {todayDone ? (
             <span className="pill-forest">
               <span className="h-1.5 w-1.5 rounded-full bg-forest" />
@@ -55,39 +62,12 @@ export default function StreakCard({
           ) : (
             <span className="pill-muted">Pending today</span>
           )}
-          {todayXp !== undefined && todayXp > 0 && (
-            <p className="mt-1 text-[11px] font-bold text-forest num">+{todayXp} XP</p>
-          )}
         </div>
       </div>
 
       {!todayDone && streak > 0 && (
-        <div className="mt-4 px-4 py-3 rounded-2xl bg-coral-tint border border-coral/30 text-coral text-sm">
+        <div className="mt-3 px-4 py-2.5 rounded-2xl bg-coral-tint border border-coral/30 text-coral text-sm">
           Send a transaction on Celo today to keep your streak alive.
-        </div>
-      )}
-
-      {profile && (
-        <div className="mt-4 pt-4 border-t border-rule">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <span className="pill-muted num">Lv {profile.level}</span>
-              {profile.freezeTokens > 0 && (
-                <span
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-berry num"
-                  title="Streak-freeze tokens"
-                >
-                  <FreezeIcon width={13} height={13} /> ×{profile.freezeTokens}
-                </span>
-              )}
-            </span>
-            <span className="text-[11px] text-ink-mute num">
-              {profile.xpIntoLevel} / {profile.xpForNextLevel} XP
-            </span>
-          </div>
-          <div className="bar mt-2">
-            <i style={{ width: `${pct}%` }} />
-          </div>
         </div>
       )}
     </div>

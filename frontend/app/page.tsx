@@ -46,7 +46,6 @@ export default function HomePage() {
   const optimisticToday = hasActivityToday && !todayDone;
 
   const { profile } = useProfile(address);
-  const todayXp = optimisticToday ? xpForDay(Number(stats?.streak ?? 0) + 1) : undefined;
 
   const { data: leaderboard, isLoading: lbLoading, updatedAt: lbUpdatedAt } =
     useLeaderboard(round?.roundId?.toString());
@@ -206,7 +205,6 @@ export default function HomePage() {
           optimistic={optimisticToday}
           isLoading={statsLoading}
           profile={profile ?? undefined}
-          todayXp={todayXp}
         />
       )}
 
