@@ -115,23 +115,21 @@ export default function OnboardingCarousel({
       </div>
 
       <div className="flex flex-col items-center gap-3 pb-4">
-        {!isLast && (
-          <button
-            onClick={next}
-            aria-label="Continue"
-            className="grid place-items-center w-11 h-11 rounded-full bg-forest text-white shadow-[0_3px_0_var(--forest-deep)] transition-transform active:translate-y-[2px]"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path
-                d="M9 6l6 6-6 6"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        )}
+        <button
+          onClick={next}
+          aria-label={isLast ? "Start playing" : "Continue"}
+          className="grid place-items-center w-11 h-11 rounded-full bg-forest text-white shadow-[0_3px_0_var(--forest-deep)] transition-transform active:translate-y-[2px]"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d={isLast ? "M5 12.5l4.5 4.5L19 7.5" : "M9 6l6 6-6 6"}
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
         <div className="flex items-center justify-center gap-2">
           {SCREENS.map((_, i) => (
             <span
