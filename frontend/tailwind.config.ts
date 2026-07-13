@@ -23,9 +23,9 @@ const config: Config = {
         },
         rule: "#E5DEC8",
         forest: {
-          DEFAULT: "#1B6B3F",
-          deep: "#0F4A2A",
-          tint: "#DEEDE2",
+          DEFAULT: "#2C6248",
+          deep: "#1B4531",
+          tint: "#E3EBE5",
         },
         gold: {
           DEFAULT: "#B8842B",
@@ -36,9 +36,13 @@ const config: Config = {
           DEFAULT: "#C44536",
           tint: "#F8DDD7",
         },
+        // Candy accents — small icon-chip / stat-accent use only (forest stays the hero).
+        amber: { DEFAULT: "#E39A2E", tint: "#F7E7C8" },
+        sky: { DEFAULT: "#3E93CE", tint: "#DCEBF6" },
+        berry: { DEFAULT: "#CF5C86", tint: "#F6DEE8" },
       },
       fontFamily: {
-        display: ["var(--font-fraunces)", "ui-serif", "Georgia", "serif"],
+        display: ["var(--font-fredoka)", "ui-rounded", "SF Pro Rounded", "system-ui", "sans-serif"],
         sans: ["var(--font-dm-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["var(--font-jetbrains)", "ui-monospace", "monospace"],
       },

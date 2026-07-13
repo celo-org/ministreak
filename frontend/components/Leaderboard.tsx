@@ -1,7 +1,8 @@
 "use client";
 
 import type { LeaderboardEntry } from "@/hooks/useLeaderboard";
-import { pseudonymFor, shortAddress } from "@/lib/pseudonym";
+import { pseudonymFor, shortAddress, monogram, avatarColor } from "@/lib/pseudonym";
+import { MedalIcon } from "@/components/icons";
 
 interface LeaderboardProps {
   entries: LeaderboardEntry[];
@@ -11,8 +12,6 @@ interface LeaderboardProps {
   highlightAddress?: string;
   updatedAt?: number; // unix seconds; when set, renders a LIVE badge
 }
-
-const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
 export default function Leaderboard({
   entries,
@@ -26,7 +25,7 @@ export default function Leaderboard({
     return (
       <div className="space-y-2">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-16 bg-paper-tint rounded-xl animate-pulse" />
+          <div key={i} className="h-14 bg-paper-tint rounded-2xl animate-pulse" />
         ))}
       </div>
     );
@@ -57,46 +56,47 @@ export default function Leaderboard({
           LIVE · updated {liveLabel}
         </div>
       )}
-      <div className="card !p-0 overflow-hidden">
-      {displayedEntries.map((entry, idx) => {
+
+      {displayedEntries.map((entry) => {
         const isMe =
           highlightAddress &&
           entry.address.toLowerCase() === highlightAddress.toLowerCase();
-        const isTop3 = entry.rank <= 3;
-        const medal = MEDAL[entry.rank];
+        const name = pseudonymFor(entry.address);
 
         return (
-          <div
-            key={entry.address}
-            className={`flex items-center gap-3 px-5 py-4 ${
-              idx > 0 ? "border-t border-rule" : ""
-            } ${isMe ? "bg-forest-tint/50" : ""}`}
-          >
-            <div className="w-9 flex-shrink-0 text-center">
-              {medal ? (
-                <span className="text-xl">{medal}</span>
+          <div key={entry.address} className={`lbrow ${isMe ? "me" : ""}`}>
+            <div className="w-5 flex-shrink-0 grid place-items-center">
+              {entry.rank === 1 ? (
+                <MedalIcon width={18} height={18} className="text-gold-bright" />
               ) : (
-                <span className="font-sans font-bold text-ink-mute num">
+                <span className="font-display font-semibold text-[13px] text-ink-mute num">
                   {entry.rank}
                 </span>
               )}
             </div>
 
+            <div
+              className="avatar w-8 h-8 text-[12px] flex-shrink-0"
+              style={{ background: avatarColor(entry.address) }}
+            >
+              {monogram(name)}
+            </div>
+
             <div className="flex-1 min-w-0">
-              <p className={`truncate ${isMe ? "font-semibold text-forest-deep" : "font-medium text-ink"}`}>
-                {isMe ? "You" : pseudonymFor(entry.address)}
+              <p className={`font-display font-semibold text-sm truncate leading-tight ${isMe ? "text-forest-deep" : "text-ink"}`}>
+                {isMe ? "You" : name}
               </p>
-              <p className="font-mono text-[11px] text-ink-faint truncate">
+              <p className="font-mono text-[10.5px] text-ink-faint truncate">
                 {shortAddress(entry.address)}
               </p>
             </div>
 
-            <div className="text-right">
-              <p className={`font-sans font-bold text-xl num leading-none ${isTop3 ? "text-gold" : "text-ink"}`}>
+            <div className="text-right flex-shrink-0">
+              <p className="font-display font-semibold text-[15px] num leading-none text-ink">
                 {entry.streak}
               </p>
               <p
-                className="text-[10px] uppercase tracking-cap text-ink-mute mt-1"
+                className="text-[9.5px] uppercase tracking-cap text-ink-mute mt-0.5"
                 title="rate-capped activity — spamming doesn't help"
               >
                 {entry.txCount} pts
@@ -104,9 +104,9 @@ export default function Leaderboard({
             </div>
 
             {showPrizes && (
-              <div className="w-16 text-right">
+              <div className="w-11 text-right flex-shrink-0">
                 {parseFloat(entry.estimatedPrize) > 0 ? (
-                  <span className="text-sm font-semibold text-forest num">
+                  <span className="font-display text-xs font-semibold text-forest num">
                     ${entry.estimatedPrize}
                   </span>
                 ) : (
@@ -117,7 +117,6 @@ export default function Leaderboard({
           </div>
         );
       })}
-      </div>
     </div>
   );
 }

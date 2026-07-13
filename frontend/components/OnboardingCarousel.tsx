@@ -1,23 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type ComponentType, type SVGProps } from "react";
+import { StreakIcon, TrophyIcon, FreezeIcon } from "@/components/icons";
 
 interface Screen {
-  glyph: string;
+  badge: ReactNode;
   title: string;
   body: ReactNode;
 }
 
+function Badge({ Icon }: { Icon: ComponentType<SVGProps<SVGSVGElement>> }) {
+  return (
+    <div className="w-24 h-24 rounded-full bg-forest-tint text-forest-deep grid place-items-center">
+      <Icon width={44} height={44} />
+    </div>
+  );
+}
+
 const SCREENS: Screen[] = [
   {
-    glyph: "🔥",
+    // eslint-disable-next-line @next/next/no-img-element
+    badge: <img src="/Logo_Color.svg" alt="MiniStreak" className="w-52 max-w-[70%]" />,
     title: "Welcome to MiniStreak",
     body: (
       <>A weekly streak game on Celo. Show up every day, keep your streak alive, and win real USDT.</>
     ),
   },
   {
-    glyph: "🎟️",
+    badge: <Badge Icon={StreakIcon} />,
     title: "Play in 2 steps",
     body: (
       <>
@@ -28,7 +38,7 @@ const SCREENS: Screen[] = [
     ),
   },
   {
-    glyph: "🏆",
+    badge: <Badge Icon={TrophyIcon} />,
     title: "How you win",
     body: (
       <>
@@ -39,7 +49,7 @@ const SCREENS: Screen[] = [
     ),
   },
   {
-    glyph: "🛡️",
+    badge: <Badge Icon={FreezeIcon} />,
     title: "Keep your edge",
     body: (
       <>
@@ -93,21 +103,41 @@ export default function OnboardingCarousel({
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">
-        <div className="text-6xl" aria-hidden>
-          {screen.glyph}
+      <div
+        key={index}
+        className="onb-slide flex-1 flex flex-col items-center justify-center px-8 text-center gap-4"
+      >
+        <div className="flex items-center justify-center" aria-hidden>
+          {screen.badge}
         </div>
-        <h2 className="font-sans font-bold text-2xl text-ink tracking-tight">{screen.title}</h2>
+        <h2 className="font-display font-semibold text-2xl text-ink tracking-tight">{screen.title}</h2>
         <p className="text-ink-mute leading-relaxed max-w-sm">{screen.body}</p>
       </div>
 
-      <div className="flex items-center justify-center gap-2 pb-4">
-        {SCREENS.map((_, i) => (
-          <span
-            key={i}
-            className={`h-1.5 w-1.5 rounded-full ${i === index ? "bg-forest" : "bg-paper-deep"}`}
-          />
-        ))}
+      <div className="flex flex-col items-center gap-3 pb-4">
+        <button
+          onClick={next}
+          aria-label={isLast ? "Start playing" : "Continue"}
+          className="grid place-items-center w-11 h-11 rounded-full bg-forest text-white shadow-[0_3px_0_var(--forest-deep)] transition-transform active:translate-y-[2px]"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d={isLast ? "M5 12.5l4.5 4.5L19 7.5" : "M9 6l6 6-6 6"}
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <div className="flex items-center justify-center gap-2">
+          {SCREENS.map((_, i) => (
+            <span
+              key={i}
+              className={`h-1.5 w-1.5 rounded-full ${i === index ? "bg-forest" : "bg-paper-deep"}`}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="p-6">

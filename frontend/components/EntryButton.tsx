@@ -9,6 +9,7 @@ interface EntryButtonProps {
   isEntered: boolean;
   isOpen: boolean;
   onSuccess?: () => void;
+  variant?: "card" | "hero";
 }
 
 export default function EntryButton({
@@ -16,12 +17,19 @@ export default function EntryButton({
   isEntered,
   isOpen,
   onSuccess,
+  variant = "card",
 }: EntryButtonProps) {
   const { enterRound, step, error, reset } = useEnterRound();
   const eligibility = useEntryEligibility();
+  const hero = variant === "hero";
 
   if (isEntered) {
-    return (
+    return hero ? (
+      <div className="flex items-center justify-center gap-2 rounded-2xl bg-white/20 text-white font-display font-semibold py-3">
+        <span className="h-1.5 w-1.5 rounded-full bg-white" />
+        You’re in this week
+      </div>
+    ) : (
       <div className="card-accent text-center">
         <span className="pill-forest">
           <span className="h-1.5 w-1.5 rounded-full bg-forest" />
@@ -32,7 +40,11 @@ export default function EntryButton({
   }
 
   if (!isOpen) {
-    return (
+    return hero ? (
+      <div className="text-center rounded-2xl bg-white/15 text-white/80 font-display font-semibold py-3">
+        Round closed
+      </div>
+    ) : (
       <button className="btn-secondary cursor-not-allowed" disabled>
         Round closed
       </button>
@@ -42,7 +54,7 @@ export default function EntryButton({
   if (step === "done") {
     return (
       <div className="card-accent text-center">
-        <p className="font-sans font-bold text-2xl text-forest-deep tracking-tight">
+        <p className="font-sans font-semibold text-2xl text-forest-deep tracking-tight">
           Entered! Good luck.
         </p>
       </div>
@@ -115,7 +127,11 @@ export default function EntryButton({
 
   return (
     <button
-      className="btn-primary"
+      className={
+        hero
+          ? "block w-full text-center font-display font-semibold py-3.5 rounded-2xl bg-white text-forest-deep shadow-[0_4px_0_rgba(0,0,0,0.14)] transition-transform active:translate-y-[2px] disabled:opacity-60"
+          : "btn-primary"
+      }
       disabled={isLoading || !roundId || eligibility.status === "loading"}
       onClick={() => {
         if (roundId) {
