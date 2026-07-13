@@ -232,15 +232,28 @@ export default function HomePage() {
 
       {/* How to play */}
       <section className="card !p-5">
-        <button
-          onClick={() => setHowToOpen(!howToOpen)}
-          className="flex items-center justify-between w-full text-left"
-        >
-          <span className="font-display font-semibold text-lg text-ink tracking-tight">How to play</span>
-          <span className={`text-forest text-2xl leading-none transition-transform ${howToOpen ? "rotate-45" : ""}`}>
-            +
-          </span>
-        </button>
+        <div className="flex items-center justify-between gap-3">
+          <button
+            onClick={() => setHowToOpen(!howToOpen)}
+            className="flex items-center gap-2 text-left"
+            aria-expanded={howToOpen}
+          >
+            <span className="font-display font-semibold text-lg text-ink tracking-tight">How to play</span>
+            <span className={`text-forest text-2xl leading-none transition-transform ${howToOpen ? "rotate-45" : ""}`}>
+              +
+            </span>
+          </button>
+          <button
+            onClick={onboarding.show}
+            aria-label="Replay intro"
+            title="Replay intro"
+            className="grid place-items-center w-9 h-9 rounded-full bg-forest text-white shadow-[0_3px_0_var(--forest-deep)] transition-transform active:translate-y-[2px] flex-shrink-0"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </button>
+        </div>
 
         {howToOpen && (
           <ol className="mt-4 space-y-3 text-ink leading-relaxed">
@@ -259,9 +272,6 @@ export default function HomePage() {
             ))}
           </ol>
         )}
-        <button onClick={onboarding.show} className="mt-4 text-sm text-forest underline">
-          Replay intro
-        </button>
       </section>
 
       <LegalLinks />
