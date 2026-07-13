@@ -7,6 +7,7 @@ export interface ProfileView {
   level: number;
   xpIntoLevel: number;
   xpForNextLevel: number;
+  freezeTokens: number;
 }
 
 export function useProfile(address?: string): { profile: ProfileView | null } {

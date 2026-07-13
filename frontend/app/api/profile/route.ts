@@ -11,7 +11,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ profile: null }, { status: 400 });
   }
   const stored = await readProfile(address);
-  const profile = stored ? { xp: stored.xp, ...xpProgress(stored.xp) } : null;
+  const profile = stored
+    ? { xp: stored.xp, freezeTokens: stored.freezeTokens, ...xpProgress(stored.xp) }
+    : null;
   return NextResponse.json(
     { profile },
     { headers: { "cache-control": "no-store" } }
