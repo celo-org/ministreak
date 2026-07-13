@@ -5,7 +5,7 @@
  */
 import { type Address, type PublicClient, parseAbi } from "viem";
 import type { QualifyingTx, RoundInfo } from "./scanner";
-import { readProfile, writeProfile } from "./profileStore";
+import { readProfile, type Profile } from "./profileStore";
 
 const VAULT_ABI = parseAbi([
   "function getPlayerStats(uint256 roundId, address player) external view returns (uint8 streak, uint32 txCount, uint16 uniqueToCount, uint8 lastValidDay, bool claimed, bool entered)",
@@ -15,6 +15,11 @@ const VAULT_ABI = parseAbi([
  * The day index to cover, or null. Covers exactly one missed day (lastValidDay+1)
  * only when the player is active again on lastValidDay+2, holds a token, and
  * hasn't used a freeze this round.
+ *
+ * Assumes steady cadence: days are submitted as they close, so activeClosedDays
+ * reflects the true return day each run. Under a multi-day backfill (several
+ * closed days submitted in one scan, e.g. after an outage), a legit save can be
+ * missed — it never fabricates a cover it shouldn't.
  */
 export function decideFreezeCover(args: {
   lastValidDay: number;
@@ -62,19 +67,31 @@ export function freezeEnabled(): boolean {
   return process.env.FREEZE_ENABLED !== "false";
 }
 
+/** A pending freeze-token debit, applied by the caller only once the covered
+ * day has actually landed on-chain (see run.ts). */
+export interface FreezeCharge {
+  key: string; // lowercased address
+  profile: Profile; // pre-decrement snapshot
+}
+
 /**
  * For each returning player with a coverable single-day gap, produce a covered
- * entry (txCount 0) to bridge the streak and consume one freeze token. Players
- * with no qualifying activity this scan are skipped before the KV read (they
- * can't be a returning player). A profile read/write failure for one player is
- * caught and skipped so it can't abort the batch (never fabricates a cover).
+ * entry (txCount 0) to bridge the streak, plus a "charge" describing the token
+ * debit to apply later. Players with no qualifying activity this scan are
+ * skipped before the KV read (they can't be a returning player). A profile
+ * read failure for one player is caught and skipped so it can't abort the
+ * batch (never fabricates a cover).
+ *
+ * Does NOT write to KV — the token must only be consumed after the cover is
+ * confirmed on-chain (batchSubmitStreaks succeeds), otherwise a failed batch
+ * would burn the token with nothing to show for it and no way to retry.
  */
 export async function applyFreezeCovers(
   client: PublicClient,
   vaultAddress: Address,
   roundInfo: RoundInfo,
   qualifying: QualifyingTx[]
-): Promise<QualifyingTx[]> {
+): Promise<{ covered: QualifyingTx[]; charges: FreezeCharge[] }> {
   const round = Number(roundInfo.roundId);
   const lastValid = await getLastValidDays(client, vaultAddress, roundInfo.roundId, roundInfo.players);
 
@@ -87,6 +104,7 @@ export async function applyFreezeCovers(
   }
 
   const covered: QualifyingTx[] = [];
+  const charges: FreezeCharge[] = [];
   for (const player of roundInfo.players) {
     const key = player.toLowerCase();
     const activeClosedDays = daysByPlayer.get(key);
@@ -103,11 +121,11 @@ export async function applyFreezeCovers(
       });
       if (coverDay === null) continue;
       covered.push({ player, roundId: roundInfo.roundId, dayIndex: coverDay, txCount: 0, uniqueToCount: 0 });
-      await writeProfile(key, { ...profile, freezeTokens: profile.freezeTokens - 1, freezeUsedRound: round });
+      charges.push({ key, profile }); // debit applied post-submit by the caller
     } catch (e) {
       console.warn(`applyFreezeCovers: ${key} failed, skipping: ${(e as Error).message}`);
       continue;
     }
   }
-  return covered;
+  return { covered, charges };
 }

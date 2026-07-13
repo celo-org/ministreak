@@ -16,8 +16,8 @@ import { checkAlreadySubmitted, batchSubmitStreaks } from "./submitter";
 import { getPriorParticipants, loyaltyMultiplierFor, applyLoyalty } from "./loyalty";
 import { computeProvisional } from "./provisional";
 import { writeProvisional } from "./provisionalStore";
-import { awardXp } from "./profileStore";
-import { applyFreezeCovers, freezeEnabled } from "./freeze";
+import { awardXp, writeProfile } from "./profileStore";
+import { applyFreezeCovers, freezeEnabled, type FreezeCharge } from "./freeze";
 import { roundDayIndex } from "@/lib/roundDay";
 
 export interface OracleRunResult {
@@ -112,9 +112,10 @@ export async function runOracleScan(
   // Streak-freeze (Phase 2b): bridge a returning player's single missed day with
   // a covered on-chain entry (txCount 0). Gated + non-fatal.
   let covered: typeof qualifying = [];
+  let charges: FreezeCharge[] = [];
   if (freezeEnabled()) {
     try {
-      covered = await applyFreezeCovers(publicClient, vaultAddress, roundInfo, qualifying);
+      ({ covered, charges } = await applyFreezeCovers(publicClient, vaultAddress, roundInfo, qualifying));
       if (covered.length) console.log(`Oracle: ${covered.length} streak-freeze cover(s) applied.`);
     } catch (e) {
       console.warn(`Oracle: freeze cover failed: ${(e as Error).message}`);
@@ -150,6 +151,16 @@ export async function runOracleScan(
     unsubmitted
   );
   console.log(`Oracle: batch submitted. Tx: ${txHash}`);
+
+  // The covered day is now on-chain — consume the freeze tokens. Deferred to
+  // post-submit so a failed batch never burns a token without landing the cover.
+  for (const c of charges) {
+    try {
+      await writeProfile(c.key, { ...c.profile, freezeTokens: c.profile.freezeTokens - 1, freezeUsedRound: Number(roundInfo.roundId) });
+    } catch (e) {
+      console.warn(`Oracle: freeze token charge failed for ${c.key}: ${(e as Error).message}`);
+    }
+  }
 
   return {
     round: Number(roundInfo.roundId),

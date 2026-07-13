@@ -18,9 +18,10 @@ vi.mock("./provisionalStore", () => ({
 }));
 vi.mock("./profileStore", () => ({
   awardXp: vi.fn(),
+  writeProfile: vi.fn(),
 }));
 vi.mock("./freeze", () => ({
-  applyFreezeCovers: vi.fn(async () => []),
+  applyFreezeCovers: vi.fn(async () => ({ covered: [], charges: [] })),
   freezeEnabled: vi.fn(() => true),
 }));
 
@@ -29,7 +30,7 @@ import { getCurrentRound, scanAllPlayers } from "./scanner";
 import { checkAlreadySubmitted, batchSubmitStreaks } from "./submitter";
 import { getPriorParticipants, applyLoyalty } from "./loyalty";
 import { writeProvisional } from "./provisionalStore";
-import { awardXp } from "./profileStore";
+import { awardXp, writeProfile } from "./profileStore";
 import { applyFreezeCovers } from "./freeze";
 
 const VAULT = "0x000000000000000000000000000000000000ba5e" as const;
@@ -133,7 +134,11 @@ it("merges freeze covers into the batch, sorted so the covered day precedes the 
   (scanAllPlayers as any).mockResolvedValue([{ player: A, roundId: 7n, dayIndex: 1, txCount: 2, uniqueToCount: 2 }]);
   (getPriorParticipants as any).mockResolvedValue({ prev: new Set(), prev2: new Set() });
   (applyLoyalty as any).mockImplementation((q: any[]) => q);
-  (applyFreezeCovers as any).mockResolvedValue([{ player: A, roundId: 7n, dayIndex: 0, txCount: 0, uniqueToCount: 0 }]);
+  const chargedProfile = { xp: 300, cursor: null, freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: null };
+  (applyFreezeCovers as any).mockResolvedValue({
+    covered: [{ player: A, roundId: 7n, dayIndex: 0, txCount: 0, uniqueToCount: 0 }],
+    charges: [{ key: A.toLowerCase(), profile: chargedProfile }],
+  });
   (checkAlreadySubmitted as any).mockResolvedValue(new Set());
   (batchSubmitStreaks as any).mockResolvedValue("0xhash");
 
@@ -141,6 +146,14 @@ it("merges freeze covers into the batch, sorted so the covered day precedes the 
 
   const submittedBatch = (batchSubmitStreaks as any).mock.calls[0][3];
   expect(submittedBatch.map((q: any) => q.dayIndex)).toEqual([0, 1]); // covered day 0 before return day 1
+  // Freeze token is charged only AFTER the batch submit succeeds, with the token decremented.
+  expect(writeProfile).toHaveBeenCalledWith(
+    A.toLowerCase(),
+    expect.objectContaining({ freezeTokens: 0, freezeUsedRound: 7 })
+  );
+  const batchOrder = (batchSubmitStreaks as any).mock.invocationCallOrder[0];
+  const writeOrder = (writeProfile as any).mock.invocationCallOrder[0];
+  expect(writeOrder).toBeGreaterThan(batchOrder);
   vi.useRealTimers();
 });
 
@@ -164,10 +177,13 @@ it("sorts a multi-player batch by (player, dayIndex) — not by dayIndex alone",
   (getPriorParticipants as any).mockResolvedValue({ prev: new Set(), prev2: new Set() });
   (applyLoyalty as any).mockImplementation((q: any[]) => q);
   // B's freeze cover (4) and A's freeze cover (0), matching each player's return day.
-  (applyFreezeCovers as any).mockResolvedValue([
-    { player: B, roundId: 7n, dayIndex: 4, txCount: 0, uniqueToCount: 0 },
-    { player: A, roundId: 7n, dayIndex: 0, txCount: 0, uniqueToCount: 0 },
-  ]);
+  (applyFreezeCovers as any).mockResolvedValue({
+    covered: [
+      { player: B, roundId: 7n, dayIndex: 4, txCount: 0, uniqueToCount: 0 },
+      { player: A, roundId: 7n, dayIndex: 0, txCount: 0, uniqueToCount: 0 },
+    ],
+    charges: [],
+  });
   (checkAlreadySubmitted as any).mockResolvedValue(new Set());
   (batchSubmitStreaks as any).mockResolvedValue("0xhash");
 
