@@ -67,4 +67,26 @@ describe("StreakCard", () => {
     render(<StreakCard streak={0} todayDone optimistic todayXp={15} />);
     expect(screen.getByText(/\+15\s*XP/i)).toBeInTheDocument();
   });
+
+  it("shows a freeze-token indicator when the player holds tokens", () => {
+    render(
+      <StreakCard
+        streak={3}
+        todayDone
+        profile={{ level: 2, xpIntoLevel: 75, xpForNextLevel: 150, freezeTokens: 2 }}
+      />
+    );
+    expect(screen.getByText(/×\s*2/)).toBeInTheDocument();
+  });
+
+  it("shows no freeze indicator at zero tokens", () => {
+    render(
+      <StreakCard
+        streak={3}
+        todayDone
+        profile={{ level: 2, xpIntoLevel: 75, xpForNextLevel: 150, freezeTokens: 0 }}
+      />
+    );
+    expect(screen.queryByText(/🛡/)).not.toBeInTheDocument();
+  });
 });

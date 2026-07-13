@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { xpForDay, levelThreshold, levelForXp, xpProgress, computeXpGrant } from "./xp";
+import { xpForDay, levelThreshold, levelForXp, xpProgress, computeXpGrant, grantFreezes } from "./xp";
 
 describe("xpForDay", () => {
   it("is 10 on day 1 and escalates +5 per streak-day", () => {
@@ -57,5 +57,23 @@ describe("computeXpGrant", () => {
     const { awardedXp, newCursor } = computeXpGrant([0], 8, { round: 7, day: 2 });
     expect(awardedXp).toBe(10);
     expect(newCursor).toEqual({ round: 8, day: 0 });
+  });
+});
+
+describe("grantFreezes", () => {
+  it("grants a token when a level-3 milestone is first reached", () => {
+    expect(grantFreezes(0, 0, 3, 2)).toEqual({ freezeTokens: 1, lastFreezeMilestone: 3 });
+  });
+  it("grants nothing below the first milestone", () => {
+    expect(grantFreezes(0, 0, 2, 2)).toEqual({ freezeTokens: 0, lastFreezeMilestone: 0 });
+  });
+  it("grants for each newly-crossed milestone", () => {
+    expect(grantFreezes(0, 0, 6, 2)).toEqual({ freezeTokens: 2, lastFreezeMilestone: 6 });
+  });
+  it("caps held tokens and still advances the milestone (forfeit beyond cap)", () => {
+    expect(grantFreezes(2, 6, 9, 2)).toEqual({ freezeTokens: 2, lastFreezeMilestone: 9 });
+  });
+  it("is idempotent once a milestone is recorded", () => {
+    expect(grantFreezes(1, 3, 3, 2)).toEqual({ freezeTokens: 1, lastFreezeMilestone: 3 });
   });
 });

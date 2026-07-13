@@ -16,7 +16,8 @@ import { checkAlreadySubmitted, batchSubmitStreaks } from "./submitter";
 import { getPriorParticipants, loyaltyMultiplierFor, applyLoyalty } from "./loyalty";
 import { computeProvisional } from "./provisional";
 import { writeProvisional } from "./provisionalStore";
-import { awardXp } from "./profileStore";
+import { awardXp, writeProfile } from "./profileStore";
+import { applyFreezeCovers, freezeEnabled, type FreezeCharge } from "./freeze";
 import { roundDayIndex } from "@/lib/roundDay";
 
 export interface OracleRunResult {
@@ -108,13 +109,30 @@ export async function runOracleScan(
     console.warn(`Oracle: XP award failed: ${(e as Error).message}`);
   }
 
-  console.log("Oracle: checking on-chain submission status...");
-  const submitted = await checkAlreadySubmitted(
-    publicClient,
-    oracleAddress,
-    qualifying
+  // Streak-freeze (Phase 2b): bridge a returning player's single missed day with
+  // a covered on-chain entry (txCount 0). Gated + non-fatal.
+  let covered: typeof qualifying = [];
+  let charges: FreezeCharge[] = [];
+  if (freezeEnabled()) {
+    try {
+      ({ covered, charges } = await applyFreezeCovers(publicClient, vaultAddress, roundInfo, qualifying));
+      if (covered.length) console.log(`Oracle: ${covered.length} streak-freeze cover(s) applied.`);
+    } catch (e) {
+      console.warn(`Oracle: freeze cover failed: ${(e as Error).message}`);
+    }
+  }
+
+  // Sort by (player, dayIndex) so a covered day is always submitted before its
+  // return day — the contract only extends the streak if the covered day lands
+  // first (dayIndex == lastValidDay + 1).
+  const toSubmit = [...qualifying, ...covered].sort(
+    (a, b) =>
+      a.player.toLowerCase().localeCompare(b.player.toLowerCase()) || a.dayIndex - b.dayIndex
   );
-  const unsubmitted = qualifying.filter(
+
+  console.log("Oracle: checking on-chain submission status...");
+  const submitted = await checkAlreadySubmitted(publicClient, oracleAddress, toSubmit);
+  const unsubmitted = toSubmit.filter(
     (q) => !submitted.has(`${q.player.toLowerCase()}:${q.roundId}:${q.dayIndex}`)
   );
   console.log(
@@ -133,6 +151,16 @@ export async function runOracleScan(
     unsubmitted
   );
   console.log(`Oracle: batch submitted. Tx: ${txHash}`);
+
+  // The covered day is now on-chain — consume the freeze tokens. Deferred to
+  // post-submit so a failed batch never burns a token without landing the cover.
+  for (const c of charges) {
+    try {
+      await writeProfile(c.key, { ...c.profile, freezeTokens: c.profile.freezeTokens - 1, freezeUsedRound: Number(roundInfo.roundId) });
+    } catch (e) {
+      console.warn(`Oracle: freeze token charge failed for ${c.key}: ${(e as Error).message}`);
+    }
+  }
 
   return {
     round: Number(roundInfo.roundId),

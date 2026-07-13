@@ -5,7 +5,7 @@ interface StreakCardProps {
   todayDone: boolean;
   optimistic?: boolean;
   isLoading?: boolean;
-  profile?: { level: number; xpIntoLevel: number; xpForNextLevel: number };
+  profile?: { level: number; xpIntoLevel: number; xpForNextLevel: number; freezeTokens: number };
   todayXp?: number;
 }
 
@@ -59,7 +59,14 @@ export default function StreakCard({
       {profile && (
         <div className="mt-4 pt-4 border-t border-rule">
           <div className="flex items-center justify-between">
-            <span className="pill-muted num">Lv {profile.level}</span>
+            <span className="flex items-center gap-2">
+              <span className="pill-muted num">Lv {profile.level}</span>
+              {profile.freezeTokens > 0 && (
+                <span className="text-[11px] text-forest num" title="Streak-freeze tokens">
+                  🛡 ×{profile.freezeTokens}
+                </span>
+              )}
+            </span>
             <span className="text-[11px] text-ink-mute num">
               {profile.xpIntoLevel} / {profile.xpForNextLevel} XP
             </span>

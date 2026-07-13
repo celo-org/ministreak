@@ -59,3 +59,23 @@ export function computeXpGrant(
     : cursor ?? { round, day: -1 };
   return { awardedXp, newCursor };
 }
+
+/**
+ * Grant freeze tokens for newly-crossed level milestones (every 3rd level),
+ * capped. lastFreezeMilestone advances even when the cap forfeits a grant, so
+ * this is idempotent.
+ */
+export function grantFreezes(
+  freezeTokens: number,
+  lastFreezeMilestone: number,
+  level: number,
+  cap: number
+): { freezeTokens: number; lastFreezeMilestone: number } {
+  const milestone = Math.floor(level / 3) * 3;
+  if (milestone <= lastFreezeMilestone) {
+    return { freezeTokens, lastFreezeMilestone };
+  }
+  const newTokens = (milestone - lastFreezeMilestone) / 3;
+  const granted = Math.min(newTokens, Math.max(0, cap - freezeTokens));
+  return { freezeTokens: freezeTokens + granted, lastFreezeMilestone: milestone };
+}

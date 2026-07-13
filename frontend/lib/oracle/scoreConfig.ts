@@ -13,3 +13,6 @@ export const LOYALTY = {
   ENTERED_LAST: 1.5,
   ENTERED_TWO_PLUS: 2.0,
 } as const;
+
+/** Max freeze tokens a player can hold (streak-freeze, Phase 2b). */
+export const FREEZE_CAP = 2;
