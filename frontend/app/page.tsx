@@ -98,8 +98,8 @@ export default function HomePage() {
       <section
         className="relative overflow-hidden rounded-[22px] p-6 text-white min-h-[168px]"
         style={{
-          background: "linear-gradient(140deg,#14603a 0%,#1f7d49 52%,#2f9d7a 100%)",
-          boxShadow: "0 16px 30px -20px rgba(15,74,42,0.8)",
+          background: "linear-gradient(150deg,#1f4a37 0%,#2c6248 55%,#3a7259 100%)",
+          boxShadow: "0 16px 30px -20px rgba(27,69,49,0.8)",
         }}
       >
         <div className="absolute -right-5 -bottom-8 opacity-[0.13] pointer-events-none">

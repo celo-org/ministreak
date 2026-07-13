@@ -11,9 +11,9 @@
     --ink-mute: #6B6452;
     --ink-faint: #A8A192;
     --rule: #E5DEC8;
-    --forest: #1B6B3F;
-    --forest-deep: #0F4A2A;
-    --forest-tint: #DEEDE2;
+    --forest: #2C6248;
+    --forest-deep: #1B4531;
+    --forest-tint: #E3EBE5;
     --gold: #B8842B;
     --gold-bright: #E5B445;
     --gold-tint: #FBEFC9;
@@ -180,7 +180,7 @@
 
   /* XP / progress bar */
   .bar { @apply rounded-full overflow-hidden; height: 11px; background: var(--paper-deep); box-shadow: inset 0 1px 2px rgba(27,26,23,0.12); }
-  .bar > i { @apply block h-full rounded-full; background: linear-gradient(90deg, #2b8a54, var(--forest)); }
+  .bar > i { @apply block h-full rounded-full; background: linear-gradient(90deg, #3f7359, var(--forest)); }
 
   /* leaderboard row */
   .lbrow { @apply flex items-center gap-2.5 rounded-2xl px-3 py-2.5; background: #FFFDF7; box-shadow: 0 1px 0 var(--rule), 0 8px 18px -18px rgba(27,26,23,0.5), inset 0 0 0 1px var(--rule); }

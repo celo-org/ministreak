@@ -23,9 +23,9 @@ const config: Config = {
         },
         rule: "#E5DEC8",
         forest: {
-          DEFAULT: "#1B6B3F",
-          deep: "#0F4A2A",
-          tint: "#DEEDE2",
+          DEFAULT: "#2C6248",
+          deep: "#1B4531",
+          tint: "#E3EBE5",
         },
         gold: {
           DEFAULT: "#B8842B",
