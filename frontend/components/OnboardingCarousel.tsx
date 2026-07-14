@@ -84,7 +84,7 @@ export default function OnboardingCarousel({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col bg-paper"
+      className="fixed inset-0 z-[60] flex flex-col bg-paper"
       role="dialog"
       aria-modal="true"
       aria-label={screen.title}
@@ -114,13 +114,13 @@ export default function OnboardingCarousel({
         <p className="text-ink-mute leading-relaxed max-w-sm">{screen.body}</p>
       </div>
 
-      <div className="flex flex-col items-center gap-3 pb-4">
+      <div className="flex flex-col items-center gap-4 pb-12">
         <button
           onClick={next}
           aria-label={isLast ? "Start playing" : "Continue"}
-          className="grid place-items-center w-11 h-11 rounded-full bg-forest text-white shadow-[0_3px_0_var(--forest-deep)] transition-transform active:translate-y-[2px]"
+          className="grid place-items-center w-14 h-14 rounded-full bg-forest text-white shadow-[0_4px_0_var(--forest-deep)] transition-transform active:translate-y-[3px]"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path
               d={isLast ? "M5 12.5l4.5 4.5L19 7.5" : "M9 6l6 6-6 6"}
               stroke="currentColor"
@@ -138,12 +138,6 @@ export default function OnboardingCarousel({
             />
           ))}
         </div>
-      </div>
-
-      <div className="p-6">
-        <button onClick={next} className="btn-primary w-full">
-          {isLast ? "Get started" : "Next"}
-        </button>
       </div>
     </div>
   );
