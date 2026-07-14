@@ -11,27 +11,27 @@ describe("OnboardingCarousel", () => {
   it("shows the first screen when open", () => {
     render(<OnboardingCarousel open onDismiss={() => {}} />);
     expect(screen.getByText(/Welcome to MiniStreak/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Next/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue/i })).toBeInTheDocument();
   });
 
-  it("advances through screens with Next and ends with Get started", () => {
+  it("advances through screens with the arrow and ends with a start button", () => {
     render(<OnboardingCarousel open onDismiss={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: /Next/i })); // -> screen 2
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i })); // -> screen 2
     expect(screen.getByText(/Play in 2 steps/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Next/i })); // -> screen 3
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i })); // -> screen 3
     expect(screen.getByText(/How you win/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Next/i })); // -> screen 4
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i })); // -> screen 4
     expect(screen.getByText(/Keep your edge/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Get started/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Start playing/i })).toBeInTheDocument();
   });
 
-  it("calls onDismiss from the final Get started", () => {
+  it("calls onDismiss from the final start button", () => {
     const onDismiss = vi.fn();
     render(<OnboardingCarousel open onDismiss={onDismiss} />);
-    fireEvent.click(screen.getByRole("button", { name: /Next/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Next/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Next/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Get started/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Start playing/i }));
     expect(onDismiss).toHaveBeenCalledOnce();
   });
 
@@ -44,8 +44,8 @@ describe("OnboardingCarousel", () => {
 
   it("restarts at the first screen when reopened after a close", () => {
     const { rerender } = render(<OnboardingCarousel open onDismiss={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: /Next/i })); // -> screen 2
-    fireEvent.click(screen.getByRole("button", { name: /Next/i })); // -> screen 3
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i })); // -> screen 2
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i })); // -> screen 3
     expect(screen.getByText(/How you win/i)).toBeInTheDocument();
 
     rerender(<OnboardingCarousel open={false} onDismiss={() => {}} />); // close
