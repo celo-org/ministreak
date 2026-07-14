@@ -51,6 +51,9 @@ const config: HardhatUserConfig = {
       chainId: 31337,
     },
   },
+  sourcify: {
+    enabled: true,
+  },
   etherscan: {
     apiKey: {
       celoSepolia: process.env.BLOCKSCOUT_API_KEY || "placeholder",

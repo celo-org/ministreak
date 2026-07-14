@@ -1,0 +1,302 @@
+<style>
+  :root{
+    --paper:#FAF6EC; --paper-tint:#F3EDD8; --paper-deep:#EFE7CC;
+    --ink:#1B1A17; --ink-mute:#6B6452; --ink-faint:#A8A192;
+    --rule:#E5DEC8;
+    --forest:#1B6B3F; --forest-deep:#0F4A2A; --forest-tint:#DEEDE2;
+    --amber:#E39A2E; --amber-tint:#F7E7C8;
+    --sky:#3E93CE; --sky-tint:#DCEBF6;
+    --berry:#CF5C86; --berry-tint:#F6DEE8;
+    --gold:#D9A82E; --gold-tint:#F5E9C6;
+    --disp: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Nunito", "Arial Rounded MT Bold", system-ui, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 50% -10%, #FFFDF6 0%, transparent 60%),var(--paper);
+    color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:36px 16px 90px;}
+  .head{max-width:1140px;margin:0 auto 30px}
+  .head .kick{font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--forest);margin:0 0 6px}
+  .head h2{font-family:var(--disp);font-weight:800;font-size:26px;margin:0;letter-spacing:-.02em}
+  .head p{color:var(--ink-mute);font-size:14px;max-width:70ch;margin:8px 0 0;line-height:1.6}
+
+  .phones{max-width:1140px;margin:0 auto;display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start}
+  .num{font-variant-numeric:tabular-nums;font-family:var(--disp)}
+  .disp{font-family:var(--disp)}
+
+  .col{width:344px}
+  .caplabel{text-align:center;font-family:var(--disp);font-weight:800;font-size:13px;color:var(--ink-mute);margin:0 0 10px;letter-spacing:.02em}
+  .phone{background:var(--paper);border-radius:32px;padding:12px;
+    box-shadow:0 2px 0 var(--rule),0 26px 54px -32px rgba(27,26,23,.4), inset 0 0 0 1px var(--rule);}
+  .screen{background:var(--paper);border-radius:22px;overflow:hidden;position:relative;height:718px}
+  .pad{padding:18px 16px 92px}
+
+  .masthead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .logo{font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:-.01em;color:var(--forest-deep)}
+  .logo b{color:var(--ink)}
+  .menu-btn{width:32px;height:32px;border-radius:11px;background:#fff;display:grid;place-items:center;box-shadow:0 1px 0 var(--rule),0 6px 14px -10px rgba(27,26,23,.4)}
+  .menu-btn span{width:14px;height:2px;border-radius:2px;background:var(--ink);box-shadow:0 -4px var(--ink),0 4px var(--ink)}
+  h1.page{font-family:var(--disp);font-weight:800;font-size:28px;margin:2px 0 16px;letter-spacing:-.02em;display:flex;align-items:center;justify-content:space-between}
+  h1.page .tro{color:var(--gold)}
+
+  /* ---------- shared bits ---------- */
+  .chip{--s:32px;width:var(--s);height:var(--s);border-radius:10px;display:grid;place-items:center;color:#fff;background:var(--chip);box-shadow:0 3px 0 rgba(0,0,0,.12)}
+  .chip svg{width:19px;height:19px}
+  .s-amber{--chip:var(--amber)} .s-sky{--chip:var(--sky)} .s-berry{--chip:var(--berry)} .s-gold{--chip:var(--gold)}
+  .nav{position:absolute;left:0;right:0;bottom:0;background:rgba(250,246,236,.94);backdrop-filter:blur(6px);display:flex;padding:9px 0 12px;box-shadow:0 -1px 0 var(--rule),0 -10px 24px -18px rgba(27,26,23,.25)}
+  .nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-faint);text-decoration:none}
+  .nav a.on{color:var(--forest)} .nav a svg{width:23px;height:23px}
+  .nav a span{font-size:10px;font-weight:800;letter-spacing:.02em;font-family:var(--disp)}
+  .toggle{display:flex;background:#fff;border-radius:14px;padding:4px;box-shadow:inset 0 0 0 1px var(--rule)}
+  .toggle b,.toggle span{flex:1;text-align:center;font-family:var(--disp);font-size:13px;font-weight:800;padding:9px 0;border-radius:11px}
+  .toggle b{background:var(--forest);color:#fff;box-shadow:0 3px 0 var(--forest-deep)}
+  .toggle span{color:var(--ink-mute)}
+
+  /* ---------- HOME ---------- */
+  .hdr{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+  .av{border-radius:50%;display:grid;place-items:center;font-family:var(--disp);font-weight:800;color:#fff;box-shadow:inset 0 0 0 3px #fff,0 0 0 1px var(--rule)}
+  .hdr .av{width:44px;height:44px;font-size:15px;background:var(--forest)}
+  .hdr .hi{flex:1;min-width:0}
+  .hdr .hi .k{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-mute)}
+  .hdr .hi .n{font-family:var(--disp);font-weight:800;font-size:18px;line-height:1.1}
+  .pstat{display:flex;align-items:center;gap:5px;background:#fff;border-radius:999px;padding:5px 10px 5px 6px;box-shadow:inset 0 0 0 1px var(--rule)}
+  .pstat .d{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--chip)}
+  .pstat .d svg{width:14px;height:14px}
+  .pstat b{font-family:var(--disp);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
+
+  .hero{position:relative;border-radius:22px;padding:18px 18px 16px;overflow:hidden;color:#fff;
+    background:linear-gradient(140deg,#14603a 0%,#1f7d49 52%,#2f9d7a 100%);
+    box-shadow:0 16px 30px -20px rgba(15,74,42,.8)}
+  .hero .wm{position:absolute;right:-24px;bottom:-30px;opacity:.13;color:#fff}
+  .hero .wm svg{width:150px;height:150px}
+  .hero .eb{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;opacity:.9}
+  .hero .pot{font-family:var(--disp);font-weight:800;font-size:44px;line-height:1;margin:6px 0 2px}
+  .hero .pot small{font-size:18px;opacity:.85;font-weight:700}
+  .hero .players{font-size:12px;opacity:.9;margin-bottom:12px}
+  .cd{display:flex;gap:6px;margin-bottom:14px}
+  .cd .u{background:rgba(255,255,255,.16);border-radius:11px;padding:7px 0;flex:1;text-align:center}
+  .cd .u b{font-family:var(--disp);font-weight:800;font-size:18px;display:block;font-variant-numeric:tabular-nums}
+  .cd .u span{font-size:9px;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+  .hero .enter{display:block;width:100%;text-align:center;background:#fff;color:var(--forest-deep);font-family:var(--disp);font-weight:800;font-size:15px;padding:13px 0;border-radius:14px;box-shadow:0 4px 0 rgba(0,0,0,.14);text-decoration:none}
+
+  .streak{display:flex;align-items:center;gap:13px;background:#FFFDF7;border-radius:20px;padding:14px 16px;margin-top:12px;position:relative;overflow:hidden;box-shadow:0 1px 0 var(--rule),0 12px 24px -20px rgba(27,26,23,.5),inset 0 0 0 1px var(--rule)}
+  .streak::after{content:"";position:absolute;left:16px;right:16px;bottom:0;height:3px;border-radius:3px;background:var(--amber)}
+  .streak .big{font-family:var(--disp);font-weight:800;font-size:34px;line-height:1}
+  .streak .m{flex:1}
+  .streak .m .t{font-family:var(--disp);font-weight:800;font-size:14px}
+  .streak .m .s{font-size:11px;color:var(--ink-mute)}
+  .pill-on{display:inline-flex;align-items:center;gap:5px;background:var(--forest-tint);color:var(--forest-deep);font-family:var(--disp);font-weight:800;font-size:11px;padding:6px 11px;border-radius:999px}
+  .pill-on i{width:7px;height:7px;border-radius:50%;background:var(--forest)}
+
+  .sect{display:flex;align-items:baseline;justify-content:space-between;margin:16px 2px 9px}
+  .sect .h{font-family:var(--disp);font-weight:800;font-size:16px}
+  .sect .a{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)}
+
+  .lbrow{display:flex;align-items:center;gap:10px;background:#FFFDF7;border-radius:15px;padding:9px 11px;margin-bottom:8px;box-shadow:0 1px 0 var(--rule),0 8px 18px -18px rgba(27,26,23,.5),inset 0 0 0 1px var(--rule)}
+  .lbrow.me{background:var(--forest-tint);box-shadow:inset 0 0 0 1px rgba(27,107,63,.35)}
+  .lbrow .rk{width:16px;text-align:center;font-family:var(--disp);font-weight:800;font-size:13px;color:var(--ink-mute)}
+  .lbrow .av{width:32px;height:32px;font-size:12px}
+  .lbrow .nm{flex:1;min-width:0}
+  .lbrow .nm b{font-family:var(--disp);font-weight:800;font-size:14px;display:block;line-height:1.15}
+  .lbrow .nm span{font-size:10.5px;color:var(--ink-mute)}
+  .lbrow .sc{font-family:var(--disp);font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+  .lbrow .prize{font-family:var(--disp);font-weight:800;font-size:12px;color:var(--forest);width:44px;text-align:right;font-variant-numeric:tabular-nums}
+  .medal{width:20px;text-align:center}
+
+  /* ---------- BOARD podium ---------- */
+  .podium{border-radius:20px;padding:14px 12px 13px;position:relative;margin-bottom:14px;background:linear-gradient(120deg,#E39A2E,#CF5C86);box-shadow:0 14px 28px -18px rgba(207,92,134,.75)}
+  .podium .crown{position:absolute;top:5px;left:50%;transform:translateX(-50%);color:#fff}
+  .podium .row{display:flex;align-items:flex-end;justify-content:center;gap:14px;padding-top:12px}
+  .podium .p{display:flex;flex-direction:column;align-items:center;gap:5px;color:#fff}
+  .podium .p .av{width:50px;height:50px;font-size:15px;background:var(--forest)}
+  .podium .p.win .av{width:62px;height:62px;transform:translateY(-6px);font-size:18px}
+  .podium .p .nm{font-family:var(--disp);font-weight:800;font-size:12px}
+  .podium .p .sc{font-size:10.5px;opacity:.94;font-variant-numeric:tabular-nums}
+
+  /* ---------- PROFILE (Me) ---------- */
+  .who{display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:18px}
+  .who .avatar{width:90px;height:90px;border-radius:50%;position:relative;display:grid;place-items:center;background:radial-gradient(120% 120% at 30% 20%,#2b8a54,var(--forest) 60%,var(--forest-deep));box-shadow:0 8px 20px -10px rgba(15,74,42,.6),inset 0 0 0 4px #fff,0 0 0 5px var(--rule)}
+  .who .avatar .mono{font-family:var(--disp);font-weight:800;font-size:32px;color:#fff}
+  .who .lvl{position:absolute;bottom:-6px;right:-6px;background:var(--amber);color:#fff;font-family:var(--disp);font-weight:800;font-size:11px;letter-spacing:.05em;padding:4px 10px;border-radius:999px;box-shadow:0 3px 0 #b97a1e,0 0 0 3px var(--paper)}
+  .who .name{font-family:var(--disp);font-weight:800;font-size:23px;margin-top:8px}
+  .who .handle{color:var(--ink-mute);font-size:12.5px;margin-top:-2px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .stat{background:#FFFDF7;border-radius:19px;padding:13px 13px 14px;position:relative;overflow:hidden;box-shadow:0 1px 0 var(--rule),0 12px 24px -20px rgba(27,26,23,.5),inset 0 0 0 1px var(--rule)}
+  .stat.tint-sky{background:var(--sky-tint)} .stat.tint-berry{background:var(--berry-tint)}
+  .stat::after{content:"";position:absolute;left:13px;right:13px;bottom:0;height:3px;border-radius:3px;background:var(--chip)}
+  .stat .big{font-family:var(--disp);font-weight:800;font-size:28px;line-height:1;margin:11px 0 2px}
+  .stat .big small{font-size:14px;color:var(--ink-mute);font-weight:700}
+  .stat .sub{font-size:10.5px;color:var(--ink-mute);font-weight:600}
+  .stat .lab{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-top:6px}
+  .xpcard{background:#FFFDF7;border-radius:19px;padding:15px;margin-top:11px;box-shadow:0 1px 0 var(--rule),0 12px 24px -20px rgba(27,26,23,.5),inset 0 0 0 1px var(--rule)}
+  .xprow{display:flex;align-items:baseline;justify-content:space-between}
+  .xprow .lv{font-family:var(--disp);font-weight:800;font-size:16px}
+  .xprow .of{font-family:var(--disp);font-weight:700;font-size:12.5px;color:var(--ink-mute);font-variant-numeric:tabular-nums}
+  .bar{height:11px;border-radius:999px;background:var(--paper-deep);margin:10px 0 8px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(27,26,23,.12)}
+  .bar>i{display:block;height:100%;width:57.5%;border-radius:999px;background:linear-gradient(90deg,#2b8a54,var(--forest))}
+  .xpcard .foot{font-size:10.5px;color:var(--ink-mute)}
+
+  /* footer strip */
+  .foot-note{max-width:1140px;margin:36px auto 0;font-size:12.5px;color:var(--ink-mute);line-height:1.65;text-align:center}
+  .foot-note b{color:var(--ink)}
+
+  /* ---------- DAILY XP ---------- */
+  .daily{background:#FFFDF7;border-radius:20px;padding:14px 15px 15px;margin-top:12px;position:relative;overflow:hidden;box-shadow:0 1px 0 var(--rule),0 12px 24px -20px rgba(27,26,23,.5),inset 0 0 0 1px var(--rule)}
+  .daily::after{content:"";position:absolute;left:15px;right:15px;bottom:0;height:3px;border-radius:3px;background:var(--forest)}
+  .daily .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .daily .top .l{display:flex;align-items:center;gap:9px}
+  .daily .top .l .chip{--s:30px;--chip:var(--forest)}
+  .daily .top .l b{font-family:var(--disp);font-weight:800;font-size:14px}
+  .daily .top .today{font-family:var(--disp);font-weight:800;font-size:15px;color:var(--forest)}
+  .days{display:flex;gap:5px}
+  .day{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .day .dot{width:100%;max-width:30px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-family:var(--disp);font-weight:800;font-size:10px;font-variant-numeric:tabular-nums}
+  .day.done .dot{background:var(--forest);color:#fff}
+  .day.today .dot{background:var(--amber);color:#fff;box-shadow:0 0 0 3px var(--amber-tint)}
+  .day.next .dot{background:var(--paper-deep);color:var(--ink-faint)}
+  .day .xp{font-size:8.5px;color:var(--ink-mute);font-variant-numeric:tabular-nums}
+  .day.today .xp{color:var(--amber);font-weight:800}
+  .day .lbl{font-size:8px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+  .daily .msg{font-size:10.5px;color:var(--ink-mute);margin-top:11px;line-height:1.5}
+  .daily .msg b{color:var(--ink)}
+</style>
+
+<div class="head">
+  <p class="kick">MiniStreak · redesign direction — v2</p>
+  <h2>Home · Board · Me</h2>
+  <p>MiniQuiz's warmth and chunk, MiniStreak's own cream + forest identity and hand-sketch icons. Real tokens, real data shapes, zero emoji. Rounded display shown via SF&nbsp;Rounded (the shipped app will load a hosted rounded font like Fredoka so Android/MiniPay matches).</p>
+</div>
+
+<div class="phones">
+
+  <!-- ==================== HOME ==================== -->
+  <div class="col">
+   <p class="caplabel">Home</p>
+   <div class="phone"><div class="screen">
+    <div class="pad">
+      <div class="masthead"><div class="logo">Mini<b>Streak</b></div><div class="menu-btn"><span></span></div></div>
+
+      <div class="hdr">
+        <div class="av">SO</div>
+        <div class="hi"><div class="k">Welcome back</div><div class="n">Swift Otter</div></div>
+        <div class="pstat"><span class="d s-amber" style="--chip:var(--amber)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2.2c.4 2.8-1.7 4-1.7 6 0 1 .8 1.6 1.5 1.1.9-.7 1-2 1.4-3.2 1.9 1.7 3.3 4 3.3 6.7a6 6 0 1 1-12 0c0-3 1.8-5.2 2.6-7.3.3-.8.3-1.7.2-2.5 1.6 1 2.7 2.5 3 4.4.9-1.2 1.2-3 .1-5.4z"/></svg></span><b>5</b></div>
+      </div>
+
+      <div class="hero">
+        <div class="wm"><svg viewBox="0 0 55 50" fill="currentColor"><path d="M53.7 20c-1.8-2-3.8-3.8-5.9-5.5-2.6-2.1-5.4-3.8-8.1-5.9L33.6 3.7C31.8 2.3 30 1.1 28 0c-1.5.8-2.8 1.6-4.1 2.6l-4.1 3.1c.07-1.2.18-2.3.13-3.5-.06-1.2-.93-2-2.1-2C16 .08 14.2.3 12.4.47c-1.1.11-2 .57-2.3 1.83-.08.69-.04 1.49-.02 2.25l.28 8.09-8.5 6.48C1 19.77.5 20.64.19 21.65c-.48 1.99-.05 4.07 1.28 5.64 1.6 1.88 4.8 2.33 6.3.35.15 2.23.15 4.35.05 6.57-.11 2.47-.12 4.82-.09 7.29.05 3.99 1.08 6.68 5.36 7.39 3 .5 5.93.6 9.01.6l13.96-.02c2.22 0 4.29-.1 6.44-.48 3.21-.58 4.76-1.88 5.56-5.05.43-1.73.5-3.44.37-5.24l-.44-6.17c-.12-1.72.68-3.36.42-5.05 1.44.21 2.8.05 4.01-.61 1.51-.83 2.34-2.36 2.26-4.1-.17-.95-.34-2.02-1-2.78z"/></svg></div>
+        <div class="eb">Round #12 · Open</div>
+        <div class="pot num">$4.20 <small>USDT</small></div>
+        <div class="players">14 players in the pot</div>
+        <div class="cd">
+          <div class="u"><b class="num">3</b><span>Days</span></div>
+          <div class="u"><b class="num">04</b><span>Hrs</span></div>
+          <div class="u"><b class="num">22</b><span>Min</span></div>
+        </div>
+        <a href="#" class="enter">Enter this week · 0.10 USDT</a>
+      </div>
+
+      <div class="daily">
+        <div class="top">
+          <div class="l">
+            <span class="chip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5c.7 4 2.9 6.2 7 6.9-4.1.7-6.3 2.9-7 6.9-.7-4-2.9-6.2-7-6.9 4.1-.7 6.3-2.9 7-6.9z"/></svg></span>
+            <b>Daily XP</b>
+          </div>
+          <span class="today">+30 XP today</span>
+        </div>
+        <div class="days">
+          <div class="day done"><div class="dot">✓</div><div class="xp">+10</div><div class="lbl">Mon</div></div>
+          <div class="day done"><div class="dot">✓</div><div class="xp">+15</div><div class="lbl">Tue</div></div>
+          <div class="day done"><div class="dot">✓</div><div class="xp">+20</div><div class="lbl">Wed</div></div>
+          <div class="day done"><div class="dot">✓</div><div class="xp">+25</div><div class="lbl">Thu</div></div>
+          <div class="day today"><div class="dot">5</div><div class="xp">+30</div><div class="lbl">Fri</div></div>
+          <div class="day next"><div class="dot">6</div><div class="xp">+35</div><div class="lbl">Sat</div></div>
+          <div class="day next"><div class="dot">7</div><div class="xp">+40</div><div class="lbl">Sun</div></div>
+        </div>
+        <div class="msg">Send a transaction daily to earn XP.</div>
+      </div>
+
+      <div class="streak">
+        <div class="chip s-amber" style="--s:44px;border-radius:14px"><svg viewBox="0 0 24 24" fill="currentColor" style="width:26px;height:26px"><path d="M13.5 2.2c.4 2.8-1.7 4-1.7 6 0 1 .8 1.6 1.5 1.1.9-.7 1-2 1.4-3.2 1.9 1.7 3.3 4 3.3 6.7a6 6 0 1 1-12 0c0-3 1.8-5.2 2.6-7.3.3-.8.3-1.7.2-2.5 1.6 1 2.7 2.5 3 4.4.9-1.2 1.2-3 .1-5.4z"/></svg></div>
+        <div class="m"><div class="t">5-day streak</div><div class="s">Best 6 · 2 freezes banked</div></div>
+        <span class="pill-on"><i></i> Today’s in</span>
+      </div>
+
+      <div class="sect"><span class="h">This week</span><span class="a">Top 5</span></div>
+      <div class="lbrow"><span class="rk">1</span><div class="av" style="background:var(--berry)">DA</div><div class="nm"><b>Daneasy</b><span>@0x4f…21 · Lv 4</span></div><span class="sc">48</span></div>
+      <div class="lbrow me"><span class="rk">2</span><div class="av">SO</div><div class="nm"><b>You</b><span>@0x71…40 · Lv 3</span></div><span class="sc">34</span></div>
+      <div class="lbrow"><span class="rk">3</span><div class="av" style="background:var(--sky)">EM</div><div class="nm"><b>Emmanuel</b><span>@0xav…71 · Lv 6</span></div><span class="sc">31</span></div>
+    </div>
+    <div class="nav">
+      <a href="#" class="on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.1 3.4 10c-.4.3-.5.9-.2 1.3.3.4.9.5 1.3.2l.4-.3V19c0 .6.4 1 1 1h4.3v-4.5c0-.4.3-.8.8-.8h2c.4 0 .8.3.8.8V20H18c.6 0 1-.4 1-1v-7.8l.4.3c.4.3 1 .2 1.3-.2.3-.4.2-1-.2-1.3L12 3.1z"/></svg><span>Home</span></a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 12.5c-1.7 0-3 1-3 2.6V19c0 .6.4 1 1 1h4v-4.9c0-1.6-1.3-2.6-2-2.6zm8 0c-.7 0-2 1-2 2.6V20h4c.6 0 1-.4 1-1v-3.9c0-1.6-1.3-2.6-3-2.6zm-4-8.5c-1.9 0-3.4 1.5-3.4 3.4S10.1 10.8 12 10.8s3.4-1.5 3.4-3.4S13.9 4 12 4zm-4.9.9C5.7 4.9 4.6 6 4.6 7.4S5.7 9.9 7.1 9.9c.35 0 .7-.07 1-.2A4.3 4.3 0 0 1 7.4 5.1zm9.8 0A4.3 4.3 0 0 1 15.9 9.7c.3.13.65.2 1 .2 1.4 0 2.5-1.1 2.5-2.5S18.3 4.9 16.9 4.9z"/></svg><span>Board</span></a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2zm0 8.8c-3.7 0-7 1.9-7 4.7V19c0 .7.5 1.2 1.2 1.2h11.6c.7 0 1.2-.5 1.2-1.2v-2.1c0-2.8-3.3-4.7-7-4.7z"/></svg><span>Me</span></a>
+    </div>
+   </div></div>
+  </div>
+
+  <!-- ==================== BOARD ==================== -->
+  <div class="col">
+   <p class="caplabel">Board</p>
+   <div class="phone"><div class="screen">
+    <div class="pad">
+      <div class="masthead"><div class="logo">Mini<b>Streak</b></div><div class="menu-btn"><span></span></div></div>
+      <h1 class="page">Board <span class="tro"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v1.5h3.2V7a3.8 3.8 0 0 1-3.8 3.8h-.2A5.9 5.9 0 0 1 13 15.4V18h3.2v2H7.8v-2H11v-2.6A5.9 5.9 0 0 1 7.8 10.8h-.2A3.8 3.8 0 0 1 3.8 7V4.5H7V3z"/></svg></span></h1>
+
+      <div class="podium">
+        <div class="crown"><svg width="22" height="15" viewBox="0 0 22 16" fill="currentColor"><path d="M2 5l3.5 3L11 2l5.5 6L20 5l-1.5 9h-15L2 5z"/></svg></div>
+        <div class="row">
+          <div class="p"><div class="av" style="background:var(--sky)">EM</div><div class="nm">Emmanuel</div><div class="sc">31 pts</div></div>
+          <div class="p win"><div class="av" style="background:var(--berry)">DA</div><div class="nm">Daneasy</div><div class="sc">48 pts</div></div>
+          <div class="p"><div class="av">SO</div><div class="nm">You</div><div class="sc">34 pts</div></div>
+        </div>
+      </div>
+
+      <div class="toggle" style="margin-bottom:12px"><b>This week</b><span>Last week</span></div>
+
+      <div class="lbrow"><span class="medal"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--gold)"><path d="M12 2l2.6 5.6L20 8.5l-4 4 1 5.7L12 15.5 7 18.2l1-5.7-4-4 5.4-.9z"/></svg></span><div class="av" style="background:var(--berry)">DA</div><div class="nm"><b>Daneasy</b><span>@0x4f…21 · Lv 4</span></div><span class="sc">48</span><span class="prize">$2.00</span></div>
+      <div class="lbrow me"><span class="rk">2</span><div class="av">SO</div><div class="nm"><b>You</b><span>@0x71…40 · Lv 3</span></div><span class="sc">34</span><span class="prize">$1.20</span></div>
+      <div class="lbrow"><span class="rk">3</span><div class="av" style="background:var(--sky)">EM</div><div class="nm"><b>Emmanuel</b><span>@0xav…71 · Lv 6</span></div><span class="sc">31</span><span class="prize">$0.80</span></div>
+      <div class="lbrow"><span class="rk">4</span><div class="av" style="background:var(--amber)">BJ</div><div class="nm"><b>Bobai J.</b><span>@0xbo…xy · Lv 2</span></div><span class="sc">28</span><span class="prize">—</span></div>
+      <div class="lbrow"><span class="rk">5</span><div class="av" style="background:var(--forest-deep)">KE</div><div class="nm"><b>Kenya.</b><span>@0x32…3 · Lv 1</span></div><span class="sc">25</span><span class="prize">—</span></div>
+    </div>
+    <div class="nav">
+      <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.1 3.4 10c-.4.3-.5.9-.2 1.3.3.4.9.5 1.3.2l.4-.3V19c0 .6.4 1 1 1h4.3v-4.5c0-.4.3-.8.8-.8h2c.4 0 .8.3.8.8V20H18c.6 0 1-.4 1-1v-7.8l.4.3c.4.3 1 .2 1.3-.2.3-.4.2-1-.2-1.3L12 3.1z"/></svg><span>Home</span></a>
+      <a href="#" class="on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 12.5c-1.7 0-3 1-3 2.6V19c0 .6.4 1 1 1h4v-4.9c0-1.6-1.3-2.6-2-2.6zm8 0c-.7 0-2 1-2 2.6V20h4c.6 0 1-.4 1-1v-3.9c0-1.6-1.3-2.6-3-2.6zm-4-8.5c-1.9 0-3.4 1.5-3.4 3.4S10.1 10.8 12 10.8s3.4-1.5 3.4-3.4S13.9 4 12 4zm-4.9.9C5.7 4.9 4.6 6 4.6 7.4S5.7 9.9 7.1 9.9c.35 0 .7-.07 1-.2A4.3 4.3 0 0 1 7.4 5.1zm9.8 0A4.3 4.3 0 0 1 15.9 9.7c.3.13.65.2 1 .2 1.4 0 2.5-1.1 2.5-2.5S18.3 4.9 16.9 4.9z"/></svg><span>Board</span></a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2zm0 8.8c-3.7 0-7 1.9-7 4.7V19c0 .7.5 1.2 1.2 1.2h11.6c.7 0 1.2-.5 1.2-1.2v-2.1c0-2.8-3.3-4.7-7-4.7z"/></svg><span>Me</span></a>
+    </div>
+   </div></div>
+  </div>
+
+  <!-- ==================== ME ==================== -->
+  <div class="col">
+   <p class="caplabel">Me</p>
+   <div class="phone"><div class="screen">
+    <div class="pad">
+      <div class="masthead"><div class="logo">Mini<b>Streak</b></div><div class="menu-btn"><span></span></div></div>
+      <h1 class="page">Me</h1>
+      <div class="who">
+        <div class="avatar"><span class="mono">SO</span><span class="lvl num">LVL&nbsp;3</span></div>
+        <div class="name">Swift Otter</div><div class="handle">0x719b…9a40</div>
+      </div>
+      <div class="grid2">
+        <div class="stat s-amber"><div class="chip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2.2c.4 2.8-1.7 4-1.7 6 0 1 .8 1.6 1.5 1.1.9-.7 1-2 1.4-3.2 1.9 1.7 3.3 4 3.3 6.7a6 6 0 1 1-12 0c0-3 1.8-5.2 2.6-7.3.3-.8.3-1.7.2-2.5 1.6 1 2.7 2.5 3 4.4.9-1.2 1.2-3 .1-5.4z"/></svg></div><div class="big num">5</div><div class="sub">Best 6</div><div class="lab">Streak</div></div>
+        <div class="stat s-sky tint-sky"><div class="chip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5c.7 4 2.9 6.2 7 6.9-4.1.7-6.3 2.9-7 6.9-.7-4-2.9-6.2-7-6.9 4.1-.7 6.3-2.9 7-6.9zM18.5 15c.3 1.8 1.3 2.8 3.2 3.2-1.9.4-2.9 1.4-3.2 3.2-.3-1.8-1.3-2.8-3.2-3.2 1.9-.4 2.9-1.4 3.2-3.2z"/></svg></div><div class="big num">34 <small>pts</small></div><div class="sub">This week</div><div class="lab">Score</div></div>
+        <div class="stat s-berry tint-berry"><div class="chip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.3l7 2.4v6c0 4.4-2.9 7.8-7 9.7-4.1-1.9-7-5.3-7-9.7v-6l7-2.4zm0 5.1c-.4 0-.7.3-.7.7v1.6l-1.4-.8a.7.7 0 1 0-.7 1.2l1.4.8-1.4.8a.7.7 0 1 0 .7 1.2l1.4-.8v1.6a.7.7 0 1 0 1.4 0v-1.6l1.4.8a.7.7 0 1 0 .7-1.2l-1.4-.8 1.4-.8a.7.7 0 1 0-.7-1.2l-1.4.8V8.1c0-.4-.3-.7-.7-.7z"/></svg></div><div class="big num">2</div><div class="sub">Skip a day, keep it</div><div class="lab">Freezes</div></div>
+        <div class="stat s-gold"><div class="chip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v1.5h3.2V7a3.8 3.8 0 0 1-3.8 3.8h-.2A5.9 5.9 0 0 1 13 15.4V18h3.2v2H7.8v-2H11v-2.6A5.9 5.9 0 0 1 7.8 10.8h-.2A3.8 3.8 0 0 1 3.8 7V4.5H7V3z"/></svg></div><div class="big num">#2</div><div class="sub">of 14</div><div class="lab">Rank</div></div>
+      </div>
+      <div class="xpcard">
+        <div class="xprow"><span class="lv num">Level 3 → 4</span><span class="of num">259 / 450 XP</span></div>
+        <div class="bar"><i></i></div>
+        <div class="foot">Earn XP <b style="color:var(--ink)">every day you transact</b> · today’s worth +30 XP</div>
+      </div>
+    </div>
+    <div class="nav">
+      <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.1 3.4 10c-.4.3-.5.9-.2 1.3.3.4.9.5 1.3.2l.4-.3V19c0 .6.4 1 1 1h4.3v-4.5c0-.4.3-.8.8-.8h2c.4 0 .8.3.8.8V20H18c.6 0 1-.4 1-1v-7.8l.4.3c.4.3 1 .2 1.3-.2.3-.4.2-1-.2-1.3L12 3.1z"/></svg><span>Home</span></a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 12.5c-1.7 0-3 1-3 2.6V19c0 .6.4 1 1 1h4v-4.9c0-1.6-1.3-2.6-2-2.6zm8 0c-.7 0-2 1-2 2.6V20h4c.6 0 1-.4 1-1v-3.9c0-1.6-1.3-2.6-3-2.6zm-4-8.5c-1.9 0-3.4 1.5-3.4 3.4S10.1 10.8 12 10.8s3.4-1.5 3.4-3.4S13.9 4 12 4zm-4.9.9C5.7 4.9 4.6 6 4.6 7.4S5.7 9.9 7.1 9.9c.35 0 .7-.07 1-.2A4.3 4.3 0 0 1 7.4 5.1zm9.8 0A4.3 4.3 0 0 1 15.9 9.7c.3.13.65.2 1 .2 1.4 0 2.5-1.1 2.5-2.5S18.3 4.9 16.9 4.9z"/></svg><span>Board</span></a>
+      <a href="#" class="on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2zm0 8.8c-3.7 0-7 1.9-7 4.7V19c0 .7.5 1.2 1.2 1.2h11.6c.7 0 1.2-.5 1.2-1.2v-2.1c0-2.8-3.3-4.7-7-4.7z"/></svg><span>Me</span></a>
+    </div>
+   </div></div>
+  </div>
+
+</div>
+
+<p class="foot-note">All three screens share the same primitives — chunky rounded cards, colored icon-chips with an accent underline, the forest hero gradient, and the pill toggle. <b>Not a MiniQuiz copy:</b> MiniStreak keeps its grown-up cream + forest identity and hand-sketch icons. Icons are still a first pass — the hand-drawn wobble gets refined once the set is approved.</p>

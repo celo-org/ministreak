@@ -24,6 +24,7 @@ contracts/coverage.json
 
 # Sensitive ops docs — never commit
 docs/key_rotation.md
+docs/fable-review.md
 
 # Subgraph
 subgraph/build/

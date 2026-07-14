@@ -6,6 +6,10 @@ import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePreviousRoundRefund } from "@/hooks/usePreviousRoundRefund";
+import { useTodayActivity } from "@/hooks/useTodayActivity";
+import { useProfile } from "@/hooks/useProfile";
+import { xpForDay } from "@/lib/xp";
+import { pseudonymFor, monogram } from "@/lib/pseudonym";
 import StreakCard from "@/components/StreakCard";
 import RoundTimer from "@/components/RoundTimer";
 import EntryButton from "@/components/EntryButton";
@@ -14,27 +18,23 @@ import ResolveRoundButton from "@/components/ResolveRoundButton";
 import Leaderboard from "@/components/Leaderboard";
 import WalletBadge from "@/components/WalletBadge";
 import LegalLinks from "@/components/Footer";
+import { StreakIcon, ScoreIcon } from "@/components/icons";
 import { roundDayIndex } from "@/lib/roundDay";
 import { useState } from "react";
+import OnboardingCarousel from "@/components/OnboardingCarousel";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 export default function HomePage() {
   const { address, isConnected } = useAccount();
   const [howToOpen, setHowToOpen] = useState(false);
+  const onboarding = useOnboarding(address);
 
-  const { data: round, isLoading: roundLoading, isError: roundError, refetch: refetchRound } =
-    useCurrentRound();
+  const { data: round, isError: roundError, refetch: refetchRound } = useCurrentRound();
 
-  const { stats, isLoading: statsLoading } = usePlayerStats(
-    round?.roundId,
-    address
-  );
+  const { stats, isLoading: statsLoading } = usePlayerStats(round?.roundId, address);
 
-  // "Done today" is derived on-chain: the player's last recorded streak day
-  // equals the current round-day index. The vault (via the oracle) is the
-  // source of truth, so this flips to true within a refetch of the cron
-  // recording today's streak. roundDayIndex snaps near-midnight round starts to
-  // UTC midnight, so "today" tracks the calendar day (and matches the scanner's
-  // day-index exactly, since both use the same helper).
+  // "Done today" is derived on-chain (see roundDay.ts): the player's last
+  // recorded streak day equals the current round-day index.
   const nowSec = Math.floor(Date.now() / 1000);
   const currentDayIndex = round ? roundDayIndex(round.startTime, nowSec) : -1;
   const todayDone =
@@ -42,9 +42,13 @@ export default function HomePage() {
     stats.lastValidDay !== 255 &&
     stats.lastValidDay === currentDayIndex;
 
-  const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(
-    round?.roundId?.toString()
-  );
+  const { hasActivityToday } = useTodayActivity(address, round);
+  const optimisticToday = hasActivityToday && !todayDone;
+
+  const { profile } = useProfile(address);
+
+  const { data: leaderboard, isLoading: lbLoading, updatedAt: lbUpdatedAt } =
+    useLeaderboard(round?.roundId?.toString());
 
   const { isAdmin } = useIsAdmin(address);
 
@@ -53,114 +57,167 @@ export default function HomePage() {
     address
   );
 
+  const name = address ? pseudonymFor(address) : "";
+  const isReturning = (profile?.xp ?? 0) > 0;
+  const streak = Number(stats?.streak ?? 0);
+  const dailyXp = xpForDay(streak + 1);
+
   return (
-    <main className="pt-10 space-y-6">
-      {/* Masthead — logo + wallet on one line, tagline below */}
-      <header className="space-y-0.5">
-        <div className="flex items-center justify-between gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/Logo_Color.svg"
-            alt="MiniStreak"
-            width={136}
-            height={25}
-            className="h-[25px] w-auto"
-          />
-          <WalletBadge />
-        </div>
-        <p className="eyebrow text-forest">Weekly streak game</p>
+    <main className="pt-9 space-y-5">
+      <OnboardingCarousel open={onboarding.open} onDismiss={onboarding.dismiss} />
+
+      {/* Masthead */}
+      <header className="flex items-center justify-between gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/Logo_Color.svg" alt="MiniStreak" width={136} height={25} className="h-[25px] w-auto" />
+        <WalletBadge />
       </header>
 
-      {/* Hero — round pot. Always render the container with a stable min-height
-          so the async on-chain read doesn't shift the layout below it (CLS). */}
-      <section className="rounded-2xl p-6 bg-paper-tint border border-rule min-h-[172px]">
-        {round ? (
+      {/* Welcome row — "Welcome back" only for a returning player */}
+      {isConnected && stats?.entered && (
+        <div className="flex items-center gap-3">
+          <div className="avatar w-11 h-11 text-[15px]">{monogram(name)}</div>
+          <div className="min-w-0 flex-1">
+            {isReturning && (
+              <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-ink-mute">
+                Welcome back
+              </div>
+            )}
+            <div className="font-display font-semibold text-lg leading-tight truncate">{name}</div>
+          </div>
+          {streak > 0 && (
+            <span className="pill-stat chip-amber">
+              <span className="dot"><StreakIcon /></span>
+              <b>{streak}</b>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Pot hero — round, countdown, and entry all in one card */}
+      <section
+        className="relative overflow-hidden rounded-[22px] p-6 text-white min-h-[168px]"
+        style={{
+          background: "linear-gradient(150deg,#1f4a37 0%,#2c6248 55%,#3a7259 100%)",
+          boxShadow: "0 16px 30px -20px rgba(27,69,49,0.8)",
+        }}
+      >
+        <div className="absolute -right-5 -bottom-8 opacity-[0.13] pointer-events-none">
+          <StreakIcon width={150} height={150} />
+        </div>
+        {roundError ? (
           <>
-            <p className="eyebrow">
+            <p className="font-display font-semibold text-xl">Contract unreachable</p>
+            <p className="text-xs opacity-90 mt-1">Connect to Celo and try again.</p>
+          </>
+        ) : round ? (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.13em] opacity-90">
               Round #{round.roundId.toString()} {round.isOpen ? "· Open" : "· Closed"}
             </p>
-            <p className="display-xl num mt-1">
-              <span className="text-ink">{round.potFormatted}</span>
-              <span className="ml-2 font-sans font-medium text-2xl align-top text-ink-mute">
-                USDT
-              </span>
+            <p className="font-display font-semibold text-[44px] leading-none mt-1.5 num">
+              {round.potFormatted}
+              <span className="text-lg opacity-85 font-semibold ml-1.5">USDT</span>
             </p>
-            <p className="text-ink-mute text-sm mt-2">
+            <p className="text-xs opacity-90 mt-1">
               {round.playerCount.toString()}{" "}
               {Number(round.playerCount) === 1 ? "player" : "players"} in the pot
             </p>
+
+            <div className="mt-4">
+              <RoundTimer endTime={round.endTime} variant="hero" />
+            </div>
+
+            <div className="mt-3.5">
+              {isConnected ? (
+                <EntryButton
+                  variant="hero"
+                  roundId={round.roundId}
+                  isEntered={stats?.entered ?? false}
+                  isOpen={round.isOpen}
+                  onSuccess={refetchRound}
+                />
+              ) : (
+                <div className="text-center rounded-2xl bg-white/15 text-white/85 font-display font-semibold py-3">
+                  Connect a wallet to enter
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <div className="animate-pulse space-y-3" aria-hidden>
-            <div className="h-3 w-24 rounded bg-paper-deep" />
-            <div className="h-14 w-44 rounded bg-paper-deep" />
-            <div className="h-3 w-32 rounded bg-paper-deep" />
+            <div className="h-3 w-24 rounded bg-white/25" />
+            <div className="h-11 w-44 rounded bg-white/25" />
+            <div className="h-3 w-32 rounded bg-white/25" />
+            <div className="h-9 w-full rounded-2xl bg-white/20 mt-2" />
           </div>
         )}
       </section>
 
-      {/* Round timer */}
-      <RoundTimer endTime={round?.endTime} />
-
       {/* Refund claim (previous round, only if claimable) */}
       {isConnected && refundInfo.claimable && refundInfo.roundId !== null && (
-        <ClaimRefundCard
-          roundId={refundInfo.roundId}
-          onSuccess={refetchRefund}
-        />
+        <ClaimRefundCard roundId={refundInfo.roundId} onSuccess={refetchRefund} />
+      )}
+
+      {/* Daily XP — make the everyday reward loop obvious */}
+      {isConnected && stats?.entered && (
+        <div className="card !p-4 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="chip chip-forest w-[30px] h-[30px]"><ScoreIcon /></div>
+              <b className="font-display text-sm font-semibold">Daily XP</b>
+            </div>
+            <span className="font-display text-[15px] font-semibold text-forest num">+{dailyXp} XP today</span>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2, 3, 4, 5, 6].map((d) => {
+              const done = currentDayIndex >= 0 && d < currentDayIndex;
+              const today = d === currentDayIndex;
+              return (
+                <div key={d} className="flex-1 flex flex-col items-center gap-1">
+                  <div
+                    className={`w-full max-w-[30px] aspect-square rounded-full grid place-items-center font-display font-semibold text-[10px] num ${
+                      done
+                        ? "bg-forest text-white"
+                        : today
+                        ? "bg-amber text-white ring-[3px] ring-amber-tint"
+                        : "bg-paper-deep text-ink-faint"
+                    }`}
+                  >
+                    {d + 1}
+                  </div>
+                  <span className={`text-[8.5px] num ${today ? "text-amber font-semibold" : "text-ink-mute"}`}>
+                    +{xpForDay(d + 1)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="text-[10.5px] text-ink-mute mt-2.5">Send a transaction daily to earn XP.</div>
+          <span className="absolute left-4 right-4 bottom-0 h-[3px] rounded-full bg-forest" />
+        </div>
       )}
 
       {/* Streak card (if entered) */}
       {isConnected && stats?.entered && (
         <StreakCard
           streak={Number(stats.streak)}
-          todayDone={todayDone}
+          todayDone={todayDone || hasActivityToday}
+          optimistic={optimisticToday}
           isLoading={statsLoading}
+          profile={profile ?? undefined}
         />
       )}
 
-      {/* Entry CTA */}
-      {isConnected ? (
-        roundLoading || !round ? (
-          roundError ? (
-            <div className="card text-center space-y-2">
-              <p className="text-coral font-semibold">Contract unreachable</p>
-              <p className="text-ink-mute text-sm">
-                Make sure you’re connected to Celo and the contract is deployed.
-              </p>
-            </div>
-          ) : (
-            <button className="btn-secondary cursor-wait" disabled>
-              Connecting…
-            </button>
-          )
-        ) : (
-          <EntryButton
-            roundId={round.roundId}
-            isEntered={stats?.entered ?? false}
-            isOpen={round.isOpen}
-            onSuccess={refetchRound}
-          />
-        )
-      ) : (
-        <div className="card text-center space-y-3">
-          <p className="text-ink-mute">Connect a wallet to enter this week.</p>
-          <WalletBadge />
-        </div>
-      )}
-
-      {/* Admin: resolve current round (visible only to KEEPER/ADMIN role holders) */}
+      {/* Admin: resolve current round */}
       {isConnected && isAdmin && round && (
-        <ResolveRoundButton
-          roundId={round.roundId}
-          onSuccess={refetchRound}
-        />
+        <ResolveRoundButton roundId={round.roundId} onSuccess={refetchRound} />
       )}
 
       {/* Top 5 leaderboard */}
       <section className="space-y-3">
         <div className="flex items-end justify-between">
-          <h2 className="font-sans font-bold text-2xl tracking-tight">This week</h2>
+          <h2 className="font-display font-semibold text-2xl tracking-tight">This week</h2>
           <span className="eyebrow">Top 5</span>
         </div>
         <Leaderboard
@@ -169,37 +226,47 @@ export default function HomePage() {
           showPrizes
           maxRows={5}
           highlightAddress={address}
+          updatedAt={lbUpdatedAt}
         />
       </section>
 
       {/* How to play */}
-      <section className="rounded-2xl p-5 bg-paper-tint border border-rule">
-        <button
-          onClick={() => setHowToOpen(!howToOpen)}
-          className="flex items-center justify-between w-full text-left"
-        >
-          <span className="font-sans font-bold text-lg text-ink tracking-tight">
-            How to play
-          </span>
-          <span className={`text-forest text-2xl leading-none transition-transform ${howToOpen ? "rotate-45" : ""}`}>
-            +
-          </span>
-        </button>
+      <section className="card !p-5">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            onClick={() => setHowToOpen(!howToOpen)}
+            className="flex items-center gap-2 text-left"
+            aria-expanded={howToOpen}
+          >
+            <span className="font-display font-semibold text-lg text-ink tracking-tight">How to play</span>
+            <span className={`text-forest text-2xl leading-none transition-transform ${howToOpen ? "rotate-45" : ""}`}>
+              +
+            </span>
+          </button>
+          <button
+            onClick={onboarding.show}
+            aria-label="Replay intro"
+            title="Replay intro"
+            className="grid place-items-center w-9 h-9 rounded-full bg-forest text-white shadow-[0_3px_0_var(--forest-deep)] transition-transform active:translate-y-[2px] flex-shrink-0"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </button>
+        </div>
 
         {howToOpen && (
           <ol className="mt-4 space-y-3 text-ink leading-relaxed">
             {[
-              <>Pay <strong>0.10 USDT</strong> to enter each week’s round (Mon 00:00 — Sun 23:59 UTC).</>,
+              <>Pay <strong>0.10 USDT</strong> to enter each week’s round.</>,
               <>Send <strong>any outgoing transaction</strong> every day to build your streak.</>,
-              <>Ranking: longest streak, then tx count, then unique addresses.</>,
-              <>Miss a day? <strong>You’re out</strong> — streak resets to zero.</>,
+              <>Ranking: longest streak, then <strong>Score</strong> (rate-capped activity — spamming doesn’t help), then unique addresses.</>,
+              <>Miss a day? <strong>You’re out</strong> — unless you spend a streak-freeze.</>,
               <>Winners split the pot <strong>50 / 30 / 20</strong> (minus 5% fee).</>,
               <>Fewer than 3 players? All entry fees are refunded.</>,
             ].map((line, i) => (
               <li key={i} className="flex gap-3">
-                <span className="font-sans font-bold text-forest num shrink-0 w-6">
-                  0{i + 1}
-                </span>
+                <span className="font-display font-semibold text-forest num shrink-0 w-6">0{i + 1}</span>
                 <span>{line}</span>
               </li>
             ))}
@@ -207,7 +274,6 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Inline legal + support (replaces the global footer divider) */}
       <LegalLinks />
     </main>
   );

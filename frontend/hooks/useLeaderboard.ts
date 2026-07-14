@@ -3,6 +3,9 @@
 import { useReadContract } from "wagmi";
 import { VAULT_ADDRESS, VAULT_ABI } from "@/lib/contracts";
 import { formatUnits } from "viem";
+import { useQuery } from "@tanstack/react-query";
+import { mergeProvisional } from "@/lib/leaderboardMerge";
+import type { ProvisionalSnapshot } from "@/lib/oracle/provisional";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -32,6 +35,18 @@ export function useLeaderboard(roundId: string | undefined) {
     functionName: "rounds",
     args: roundIdBigInt ? [roundIdBigInt] : undefined,
     query: { enabled: !!roundIdBigInt, retry: 2 },
+  });
+
+  const { data: provisional } = useQuery({
+    queryKey: ["provisional", roundId],
+    enabled: !!roundId,
+    refetchInterval: 60_000,
+    queryFn: async (): Promise<ProvisionalSnapshot | null> => {
+      const res = await fetch(`/api/provisional?roundId=${roundId}`, { cache: "no-store" });
+      if (!res.ok) return null;
+      const json = (await res.json()) as { snapshot: ProvisionalSnapshot | null };
+      return json.snapshot;
+    },
   });
 
   const isLoading = lbLoading || roundLoading;
@@ -64,6 +79,9 @@ export function useLeaderboard(roundId: string | undefined) {
         else if (rank === 3) prize = (distributable * 0.2).toFixed(2);
         return { ...entry, rank, estimatedPrize: prize };
       });
+
+    // Merge today's provisional snapshot (display-only) and re-rank.
+    entries = mergeProvisional(entries, provisional ?? null, distributable);
   }
 
   // Build round info from on-chain data
@@ -87,5 +105,6 @@ export function useLeaderboard(roundId: string | undefined) {
   return {
     data: roundIdBigInt ? { entries, round: roundInfo } : null,
     isLoading,
+    updatedAt: provisional?.updatedAt,
   };
 }
