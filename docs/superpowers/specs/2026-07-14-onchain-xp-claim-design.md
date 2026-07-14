@@ -78,6 +78,10 @@ interface IMiniStreak {
 3. `uint32 today = uint32(block.timestamp / 1 days);` — rolls at 00:00 UTC, matching the
    game's midnight-UTC day boundary.
 4. `require(lastClaimDay[msg.sender] < today, AlreadyClaimedToday())`.
+   **This is a per-calendar-day reset, NOT a rolling 24h cooldown.** Eligibility depends
+   only on the UTC day, never on how long ago the player last claimed: a player who
+   claims at 23:59 UTC can claim again at 00:00 UTC (~1 min later) because `today`
+   incremented. One claim per UTC calendar day; the clock is the day, not the player.
 5. `lastClaimDay[msg.sender] = today; xp[msg.sender] += dailyXp;`
 6. `emit Claimed(msg.sender, today, dailyXp, xp[msg.sender]);`
 
