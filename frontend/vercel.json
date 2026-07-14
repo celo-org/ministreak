@@ -9,7 +9,7 @@
   "crons": [
     {
       "path": "/api/oracle",
-      "schedule": "*/3 * * * *"
+      "schedule": "*/10 * * * *"
     },
     {
       "path": "/api/resolve",
