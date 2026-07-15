@@ -55,34 +55,26 @@ const config: HardhatUserConfig = {
     enabled: true,
   },
   etherscan: {
-    apiKey: {
-      celoSepolia: process.env.BLOCKSCOUT_API_KEY || "placeholder",
-      alfajores: process.env.CELOSCAN_API_KEY || "",
-      celo: process.env.CELOSCAN_API_KEY || "",
-    },
+    // Etherscan V2: a single key routed by chainId (Celoscan is Etherscan-powered
+    // and covered by V2 for celo mainnet). Celo Sepolia uses Blockscout (no key
+    // required), kept as a customChain below.
+    apiKey: process.env.CELOSCAN_API_KEY || "",
     customChains: [
+      {
+        network: "celo",
+        chainId: 42220,
+        urls: {
+          // Etherscan V2 unified endpoint (routes by chainId); Celoscan is powered by it.
+          apiURL: "https://api.etherscan.io/v2/api",
+          browserURL: "https://celoscan.io",
+        },
+      },
       {
         network: "celoSepolia",
         chainId: 11142220,
         urls: {
           apiURL: "https://celo-sepolia.blockscout.com/api",
           browserURL: "https://celo-sepolia.blockscout.com",
-        },
-      },
-      {
-        network: "alfajores",
-        chainId: 44787,
-        urls: {
-          apiURL: "https://api-alfajores.celoscan.io/api",
-          browserURL: "https://alfajores.celoscan.io",
-        },
-      },
-      {
-        network: "celo",
-        chainId: 42220,
-        urls: {
-          apiURL: "https://api.celoscan.io/api",
-          browserURL: "https://celoscan.io",
         },
       },
     ],
