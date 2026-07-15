@@ -28,11 +28,6 @@ describe("StreakCard", () => {
     expect(screen.getByText("Today’s in")).toBeInTheDocument();
   });
 
-  it("shows a 'confirming' state when today is optimistic-only", () => {
-    render(<StreakCard streak={3} todayDone optimistic />);
-    expect(screen.getByText(/confirming/i)).toBeInTheDocument();
-  });
-
   it("nudges the user when streak is alive but today isn't done", () => {
     render(<StreakCard streak={2} todayDone={false} />);
     expect(screen.getByText("Pending today")).toBeInTheDocument();

@@ -43,7 +43,6 @@ export default function HomePage() {
     stats.lastValidDay === currentDayIndex;
 
   const { hasActivityToday } = useTodayActivity(address, round);
-  const optimisticToday = hasActivityToday && !todayDone;
 
   const { profile } = useProfile(address);
 
@@ -79,7 +78,7 @@ export default function HomePage() {
           <div className="min-w-0 flex-1">
             {isReturning && (
               <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-ink-mute">
-                Welcome back
+                Welcome
               </div>
             )}
             <div className="font-display font-semibold text-lg leading-tight truncate">{name}</div>
@@ -168,7 +167,6 @@ export default function HomePage() {
         <StreakCard
           streak={Number(stats.streak)}
           todayDone={todayDone || hasActivityToday}
-          optimistic={optimisticToday}
           isLoading={statsLoading}
           profile={profile ?? undefined}
         />

@@ -103,11 +103,12 @@ export default function LeaderboardPage() {
         />
       )}
 
-      {entries.some((e, i, arr) => i > 0 && arr[i - 1].streak === e.streak) && (
-        <p className="text-center text-sm text-ink-mute">
-          Ties broken by Score, then unique addresses.
-        </p>
-      )}
+      {!showLast &&
+        entries.some((e, i, arr) => i > 0 && arr[i - 1].streak === e.streak) && (
+          <p className="text-center text-sm text-ink-mute">
+            Ties broken by Score, then unique addresses.
+          </p>
+        )}
       <p className="text-center text-xs text-ink-faint">
         {showLast ? "Final results." : "Updates every 30 seconds."}
       </p>

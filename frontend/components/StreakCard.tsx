@@ -5,7 +5,6 @@ import { StreakIcon, FreezeIcon } from "@/components/icons";
 interface StreakCardProps {
   streak: number;
   todayDone: boolean;
-  optimistic?: boolean;
   isLoading?: boolean;
   profile?: { level: number; freezeTokens: number };
 }
@@ -13,7 +12,6 @@ interface StreakCardProps {
 export default function StreakCard({
   streak,
   todayDone,
-  optimistic,
   isLoading,
   profile,
 }: StreakCardProps) {
@@ -36,7 +34,7 @@ export default function StreakCard({
           </div>
           <div className="min-w-0">
             <p className="font-display font-semibold text-lg leading-tight">
-              {streak > 0 ? `${streak}-day streak` : "Start your streak today"}
+              {streak > 0 ? `${streak}-day streak` : "Start your streak"}
             </p>
             {profile && (
               <p className="text-ink-mute text-xs mt-0.5 flex items-center gap-1.5 flex-wrap">
@@ -58,7 +56,7 @@ export default function StreakCard({
           {todayDone ? (
             <span className="pill-forest">
               <span className="h-1.5 w-1.5 rounded-full bg-forest" />
-              {optimistic ? "Today’s in · confirming" : "Today’s in"}
+              Today’s in
             </span>
           ) : (
             <span className="pill-muted">Pending today</span>
