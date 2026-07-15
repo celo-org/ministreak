@@ -4,7 +4,7 @@ Show up every day. Win the week.
 
 MiniStreak is a weekly on-chain transaction streak competition on Celo. Pay 0.10 USDT to enter, send any outgoing transaction each day to keep your streak alive, and split the pot at week's end. Built for MiniPay.
 
-Live demo: [ministreak-fe.vercel.app](https://ministreak-fe.vercel.app) · Repository: [github.com/djokerops/ministreak](https://github.com/djokerops/ministreak)
+Live demo: [ministreak.app](https://ministreak.app) · Repository: [github.com/celo-org/ministreak](https://github.com/celo-org/ministreak)
 
 ## How It Works
 
@@ -44,6 +44,7 @@ The on-chain layer is two contracts (no proxies, no upgradeability — fixed onc
 |---|---|
 | MiniStreak vault | `0xcd125da0EC85c8414D39fa94011b607C2A5f17e5` |
 | StreakOracle | `0x2c08420187F96a69E0aB64a1507282786E4f474e` |
+| StreakXP | `0x1675D33573E2b0DA54dfC53a97CFbC50D41Af60e` |
 | USDT | `0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e` |
 
 
