@@ -29,6 +29,10 @@ export interface OracleRunResult {
   alreadySubmitted: number;
   noActivity: number;
   txHash?: string;
+  // Non-fatal failures that were caught mid-run (KV writes, freeze steps).
+  // Surfaced so a silently-failing write (e.g. a frozen provisional) is visible
+  // in the /api/oracle response instead of only in console.warn.
+  errors: string[];
 }
 
 export async function runOracleScan(
@@ -44,12 +48,14 @@ export async function runOracleScan(
     `Oracle: round ${roundInfo.roundId}, ${roundInfo.players.length} players`
   );
 
+  const errors: string[] = [];
   const base: OracleRunResult = {
     round: Number(roundInfo.roundId),
     playersScanned: roundInfo.players.length,
     streaksSubmitted: 0,
     alreadySubmitted: 0,
     noActivity: 0,
+    errors,
   };
 
   if (roundInfo.players.length === 0) return base;
@@ -92,7 +98,9 @@ export async function runOracleScan(
       await writeProvisional(snapshot);
       console.log(`Oracle: wrote provisional snapshot (day ${currentDayIndex}).`);
     } catch (e) {
-      console.warn(`Oracle: provisional write failed: ${(e as Error).message}`);
+      const msg = (e as Error).message;
+      console.warn(`Oracle: provisional write failed: ${msg}`);
+      errors.push(`provisional write: ${msg}`);
     }
   }
 
@@ -122,7 +130,9 @@ export async function runOracleScan(
       })
     );
   } catch (e) {
-    console.warn(`Oracle: freeze grant pass failed: ${(e as Error).message}`);
+    const msg = (e as Error).message;
+    console.warn(`Oracle: freeze grant pass failed: ${msg}`);
+    errors.push(`freeze grant: ${msg}`);
   }
 
   // Streak-freeze (Phase 2b): bridge a returning player's single missed day with
@@ -134,7 +144,9 @@ export async function runOracleScan(
       ({ covered, charges } = await applyFreezeCovers(publicClient, vaultAddress, roundInfo, qualifying));
       if (covered.length) console.log(`Oracle: ${covered.length} streak-freeze cover(s) applied.`);
     } catch (e) {
-      console.warn(`Oracle: freeze cover failed: ${(e as Error).message}`);
+      const msg = (e as Error).message;
+      console.warn(`Oracle: freeze cover failed: ${msg}`);
+      errors.push(`freeze cover: ${msg}`);
     }
   }
 
@@ -174,7 +186,9 @@ export async function runOracleScan(
     try {
       await writeProfile(c.key, { ...c.profile, freezeTokens: c.profile.freezeTokens - 1, freezeUsedRound: Number(roundInfo.roundId) });
     } catch (e) {
-      console.warn(`Oracle: freeze token charge failed for ${c.key}: ${(e as Error).message}`);
+      const msg = (e as Error).message;
+      console.warn(`Oracle: freeze token charge failed for ${c.key}: ${msg}`);
+      errors.push(`freeze charge ${c.key}: ${msg}`);
     }
   }
 
@@ -185,5 +199,6 @@ export async function runOracleScan(
     alreadySubmitted: submitted.size,
     noActivity,
     txHash,
+    errors,
   };
 }

@@ -20,6 +20,7 @@ import LegalLinks from "@/components/Footer";
 import DailyXpCard from "@/components/DailyXpCard";
 import { StreakIcon } from "@/components/icons";
 import { roundDayIndex } from "@/lib/roundDay";
+import { optimisticStreak } from "@/lib/optimisticStreak";
 import { useState } from "react";
 import OnboardingCarousel from "@/components/OnboardingCarousel";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -44,10 +45,23 @@ export default function HomePage() {
 
   const { hasActivityToday } = useTodayActivity(address, round);
 
+  // Live streak (see optimisticStreak.ts): reflect today's tx ~1 min after it
+  // lands, ahead of the end-of-day on-chain submission.
+  const streak = optimisticStreak({
+    onChainStreak: Number(stats?.streak ?? 0),
+    lastValidDay: stats?.lastValidDay,
+    currentDayIndex,
+    hasActivityToday,
+    todayDone,
+  });
+
   const { profile } = useProfile(address);
 
   const { data: leaderboard, isLoading: lbLoading, updatedAt: lbUpdatedAt } =
-    useLeaderboard(round?.roundId?.toString());
+    useLeaderboard(
+      round?.roundId?.toString(),
+      address ? { address, streak } : undefined
+    );
 
   const { isAdmin } = useIsAdmin(address);
 
@@ -58,17 +72,6 @@ export default function HomePage() {
 
   const name = address ? pseudonymFor(address) : "";
   const isReturning = (profile?.xp ?? 0) > 0;
-
-  // Live streak: the on-chain streak only advances at the end-of-day submission,
-  // so the moment today's tx is detected (via useTodayActivity, ~1 min) reflect
-  // it optimistically — the count feels live, matching the "Today's in" pill.
-  const onChainStreak = Number(stats?.streak ?? 0);
-  const activeTodayPending = hasActivityToday && !todayDone;
-  const streak = !activeTodayPending
-    ? onChainStreak
-    : stats?.lastValidDay === currentDayIndex - 1
-    ? onChainStreak + 1 // today continues yesterday's streak
-    : 1; // first active day of the round, or returning after a gap → today = 1
 
   return (
     <main className="pt-9 space-y-5">

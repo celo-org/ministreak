@@ -5,10 +5,14 @@ import { useAccount } from "wagmi";
 import { useCurrentRound } from "@/hooks/useCurrentRound";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import type { LeaderboardEntry } from "@/hooks/useLeaderboard";
+import { usePlayerStats } from "@/hooks/usePlayerStats";
+import { useTodayActivity } from "@/hooks/useTodayActivity";
 import Leaderboard from "@/components/Leaderboard";
 import WalletBadge from "@/components/WalletBadge";
 import { CrownIcon } from "@/components/icons";
 import { pseudonymFor, monogram, avatarColor } from "@/lib/pseudonym";
+import { roundDayIndex } from "@/lib/roundDay";
+import { optimisticStreak } from "@/lib/optimisticStreak";
 
 function PodiumPlayer({ entry, me, win }: { entry: LeaderboardEntry; me: boolean; win?: boolean }) {
   const name = pseudonymFor(entry.address);
@@ -39,8 +43,30 @@ export default function LeaderboardPage() {
       ? (round.roundId - BigInt(1)).toString()
       : undefined;
 
-  const { data: thisBoard, isLoading: thisLoading, updatedAt } =
-    useLeaderboard(thisRoundId);
+  // Connected player's live streak, so their own row on the current board bumps
+  // ~1 min after their tx (matching the Home card) rather than waiting for the
+  // provisional snapshot. Last week is final, so no optimism there.
+  const { stats: selfStats } = usePlayerStats(round?.roundId, address);
+  const { hasActivityToday } = useTodayActivity(address, round);
+  const currentDayIndex = round
+    ? roundDayIndex(round.startTime, Math.floor(Date.now() / 1000))
+    : -1;
+  const selfTodayDone =
+    !!selfStats?.entered &&
+    selfStats.lastValidDay !== 255 &&
+    selfStats.lastValidDay === currentDayIndex;
+  const selfStreak = optimisticStreak({
+    onChainStreak: Number(selfStats?.streak ?? 0),
+    lastValidDay: selfStats?.lastValidDay,
+    currentDayIndex,
+    hasActivityToday,
+    todayDone: selfTodayDone,
+  });
+
+  const { data: thisBoard, isLoading: thisLoading, updatedAt } = useLeaderboard(
+    thisRoundId,
+    address ? { address, streak: selfStreak } : undefined
+  );
   const { data: lastBoard, isLoading: lastLoading } = useLeaderboard(lastRoundId);
 
   const showLast = tab === "last";

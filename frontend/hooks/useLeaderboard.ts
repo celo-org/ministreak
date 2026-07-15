@@ -4,7 +4,7 @@ import { useReadContract } from "wagmi";
 import { VAULT_ADDRESS, VAULT_ABI } from "@/lib/contracts";
 import { formatUnits } from "viem";
 import { useQuery } from "@tanstack/react-query";
-import { mergeProvisional } from "@/lib/leaderboardMerge";
+import { mergeProvisional, applySelfStreak } from "@/lib/leaderboardMerge";
 import type { ProvisionalSnapshot } from "@/lib/oracle/provisional";
 
 export interface LeaderboardEntry {
@@ -16,7 +16,10 @@ export interface LeaderboardEntry {
   estimatedPrize: string;
 }
 
-export function useLeaderboard(roundId: string | undefined) {
+export function useLeaderboard(
+  roundId: string | undefined,
+  self?: { address: string; streak: number }
+) {
   const roundIdBigInt = roundId ? BigInt(roundId) : undefined;
 
   // Read leaderboard directly from contract
@@ -82,6 +85,12 @@ export function useLeaderboard(roundId: string | undefined) {
 
     // Merge today's provisional snapshot (display-only) and re-rank.
     entries = mergeProvisional(entries, provisional ?? null, distributable);
+
+    // Optimistic: reflect the connected player's just-sent tx on their own row
+    // (~1 min) ahead of the ~10-min provisional, matching the Home streak card.
+    if (self) {
+      entries = applySelfStreak(entries, self.address, self.streak, distributable);
+    }
   }
 
   // Build round info from on-chain data
