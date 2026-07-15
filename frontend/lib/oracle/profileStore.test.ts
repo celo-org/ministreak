@@ -10,13 +10,10 @@ vi.mock("@vercel/kv", () => ({
   },
 }));
 
-import { readProfile, writeProfile, awardXp, type Profile } from "./profileStore";
-import type { QualifyingTx } from "./scanner";
+import { readProfile, writeProfile, grantFreezesFor, type Profile } from "./profileStore";
 import { kv } from "@vercel/kv";
 
 const A = "0xAAAA000000000000000000000000000000000000";
-const entry = (player: string, dayIndex: number): QualifyingTx =>
-  ({ player: player as `0x${string}`, roundId: 7n, dayIndex, txCount: 1, uniqueToCount: 1 });
 
 beforeEach(() => {
   store.clear();
@@ -25,7 +22,7 @@ beforeEach(() => {
 
 describe("readProfile / writeProfile", () => {
   it("round-trips a profile under profile:<lowercased address>", async () => {
-    const p: Profile = { xp: 45, cursor: { round: 7, day: 2 }, freezeTokens: 0, lastFreezeMilestone: 0, freezeUsedRound: null };
+    const p: Profile = { freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: null };
     await writeProfile(A.toUpperCase(), p);
     expect(kv.set).toHaveBeenCalledWith(`profile:${A.toLowerCase()}`, p);
     expect(await readProfile(A)).toEqual(p);
@@ -35,60 +32,49 @@ describe("readProfile / writeProfile", () => {
     (kv.get as any).mockRejectedValueOnce(new Error("kv down"));
     expect(await readProfile(A)).toBeNull();
   });
-});
-
-describe("awardXp", () => {
-  it("awards escalating XP for a player's closed days and advances the cursor", async () => {
-    await awardXp([entry(A, 0), entry(A, 1), entry(A, 2)], 7);
-    expect(await readProfile(A)).toEqual({ xp: 45, cursor: { round: 7, day: 2 }, freezeTokens: 0, lastFreezeMilestone: 0, freezeUsedRound: null }); // 10+15+20
-  });
-  it("is idempotent — re-running awards nothing more", async () => {
-    await awardXp([entry(A, 0), entry(A, 1)], 7);
-    await awardXp([entry(A, 0), entry(A, 1)], 7);
-    expect(await readProfile(A)).toEqual({ xp: 25, cursor: { round: 7, day: 1 }, freezeTokens: 0, lastFreezeMilestone: 0, freezeUsedRound: null });
-  });
-  it("accumulates across successive runs", async () => {
-    await awardXp([entry(A, 0)], 7);
-    await awardXp([entry(A, 0), entry(A, 1)], 7);
-    expect((await readProfile(A))!.xp).toBe(25); // 10 then +15
-  });
-  it("skips a player (does not clobber accumulated XP) when the KV read errors transiently", async () => {
-    // Seed an existing profile with real accumulated cross-round XP.
-    const seeded: Profile = { xp: 900, cursor: { round: 6, day: 6 }, freezeTokens: 0, lastFreezeMilestone: 0, freezeUsedRound: null };
-    await writeProfile(A, seeded);
-    vi.clearAllMocks(); // clear the call log from the seed write, keep the store
-
-    // The next kv.get (the awardXp read for this player) blips.
-    (kv.get as any).mockRejectedValueOnce(new Error("kv blip"));
-
-    await awardXp([entry(A, 0), entry(A, 1)], 8);
-
-    // Must not have written anything for this player during this run.
-    expect(kv.set).not.toHaveBeenCalled();
-    // The stored profile must be untouched.
-    expect(await readProfile(A)).toEqual(seeded);
-  });
-});
-
-describe("awardXp — freeze grants + profile shape", () => {
-  it("normalizes an old profile (missing freeze fields) on read", async () => {
-    await (await import("@vercel/kv")).kv.set(`profile:${A.toLowerCase()}`, { xp: 50, cursor: null });
+  it("normalizes an old/partial profile (missing freeze fields) on read", async () => {
+    await (await import("@vercel/kv")).kv.set(`profile:${A.toLowerCase()}`, {});
     expect(await readProfile(A)).toEqual({
-      xp: 50, cursor: null, freezeTokens: 0, lastFreezeMilestone: 0, freezeUsedRound: null,
+      freezeTokens: 0, lastFreezeMilestone: 0, freezeUsedRound: null,
     });
   });
-  it("grants a freeze token when awarded XP pushes the player to level 3", async () => {
-    // Seed near L3 (threshold 250). 249 xp + a day that crosses it.
-    await writeProfile(A, { xp: 249, cursor: { round: 7, day: 0 }, freezeTokens: 0, lastFreezeMilestone: 0, freezeUsedRound: null });
-    await awardXp([entry(A, 1)], 7); // day-1 streak run [0? not present] -> streak 1 -> +10 xp = 259 -> level 3
-    const p = (await readProfile(A))!;
-    expect(p.xp).toBe(259);
-    expect(p.freezeTokens).toBe(1);
-    expect(p.lastFreezeMilestone).toBe(3);
+});
+
+describe("grantFreezesFor", () => {
+  it("grants a freeze token when the level crosses a milestone (every 3rd level)", async () => {
+    await grantFreezesFor(A, 3);
+    expect(await readProfile(A)).toEqual({
+      freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: null,
+    });
   });
-  it("preserves freezeUsedRound across an award", async () => {
-    await writeProfile(A, { xp: 0, cursor: null, freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: 6 });
-    await awardXp([entry(A, 0)], 7);
+  it("is idempotent — calling again at the same level grants nothing more", async () => {
+    await grantFreezesFor(A, 3);
+    await grantFreezesFor(A, 3);
+    expect(await readProfile(A)).toEqual({
+      freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: null,
+    });
+  });
+  it("does not write when the level hasn't crossed a new milestone", async () => {
+    await grantFreezesFor(A, 3);
+    vi.clearAllMocks();
+    await grantFreezesFor(A, 4); // still under the next milestone (6)
+    expect(kv.set).not.toHaveBeenCalled();
+  });
+  it("preserves freezeUsedRound across a grant", async () => {
+    await writeProfile(A, { freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: 6 });
+    await grantFreezesFor(A, 6);
     expect((await readProfile(A))!.freezeUsedRound).toBe(6);
+  });
+  it("is non-fatal when the underlying KV read errors — never throws", async () => {
+    // readProfile already swallows KV errors and returns null (a soft-fail
+    // read, not the strict throw-on-error variant); grantFreezesFor's own
+    // try/catch around readProfile is a second, redundant safety net. Either
+    // way, a read blip must never surface as a thrown error to the caller —
+    // it falls back to a fresh default profile.
+    (kv.get as any).mockRejectedValueOnce(new Error("kv down"));
+    await expect(grantFreezesFor(A, 3)).resolves.toBeUndefined();
+    expect(await readProfile(A)).toEqual({
+      freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: null,
+    });
   });
 });

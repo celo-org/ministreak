@@ -103,6 +103,14 @@ async function main() {
   await grantTx.wait();
   console.log(`      ORACLE_ROLE granted. Tx: ${grantTx.hash}`);
 
+  // ─── 5. Deploy StreakXP ───────────────────────────────────────────────────
+  console.log("\n[5/5] Deploying StreakXP...");
+  const XPFactory = await ethers.getContractFactory("StreakXP");
+  const streakXp = await XPFactory.deploy(vaultAddress);
+  await streakXp.waitForDeployment();
+  const streakXpAddress = await streakXp.getAddress();
+  console.log(`      StreakXP deployed at: ${streakXpAddress}`);
+
   // ─── Summary ──────────────────────────────────────────────────────────────
 
   const deploymentInfo = {
@@ -116,6 +124,7 @@ async function main() {
       vault: vaultAddress,
       oracle: oracleAddress,
       usdt: usdtAddress,
+      streakXp: streakXpAddress,
     },
   };
 
@@ -139,6 +148,9 @@ async function main() {
   );
   console.log(
     `   npx hardhat verify --network ${network.name} ${oracleAddress} "${vaultAddress}" "${oracleHotWallet}"`
+  );
+  console.log(
+    `   npx hardhat verify --network ${network.name} ${streakXpAddress} "${vaultAddress}"`
   );
   console.log("3. Update oracle-service/.env with:");
   console.log(`   VAULT_ADDRESS=${vaultAddress}`);

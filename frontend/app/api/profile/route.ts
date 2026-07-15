@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { readProfile } from "@/lib/oracle/profileStore";
-import { xpProgress } from "@/lib/xp";
 
-// Public, read-only per-player XP/level profile. Never cached.
+// Public, read-only per-player freeze-token profile. XP now lives on-chain
+// (see hooks/useXp.ts). Never cached.
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
@@ -11,9 +11,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ profile: null }, { status: 400 });
   }
   const stored = await readProfile(address);
-  const profile = stored
-    ? { xp: stored.xp, freezeTokens: stored.freezeTokens, ...xpProgress(stored.xp) }
-    : null;
+  const profile = stored ? { freezeTokens: stored.freezeTokens } : null;
   return NextResponse.json(
     { profile },
     { headers: { "cache-control": "no-store" } }

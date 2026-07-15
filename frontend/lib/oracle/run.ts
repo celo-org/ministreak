@@ -16,9 +16,11 @@ import { checkAlreadySubmitted, batchSubmitStreaks } from "./submitter";
 import { getPriorParticipants, loyaltyMultiplierFor, applyLoyalty } from "./loyalty";
 import { computeProvisional } from "./provisional";
 import { writeProvisional } from "./provisionalStore";
-import { awardXp, writeProfile } from "./profileStore";
+import { grantFreezesFor, writeProfile } from "./profileStore";
 import { applyFreezeCovers, freezeEnabled, type FreezeCharge } from "./freeze";
 import { roundDayIndex } from "@/lib/roundDay";
+import { levelForXp } from "@/lib/xp";
+import { XP_ADDRESS, XP_ABI } from "@/lib/contracts";
 
 export interface OracleRunResult {
   round: number;
@@ -101,12 +103,26 @@ export async function runOracleScan(
     return { ...base, noActivity };
   }
 
-  // Award retention XP for closed active days (KV-backed, non-fatal). Idempotent
-  // per player via a stored cursor, so it is safe to run on every scan.
+  // Re-derive freeze-token grants from on-chain XP (KV-backed, non-fatal).
+  // Idempotent per player via the stored lastFreezeMilestone, so it is safe to
+  // run on every scan.
   try {
-    await awardXp(qualifying, Number(roundInfo.roundId));
+    const players = roundInfo.players;
+    const results = await publicClient.multicall({
+      contracts: players.map((p) => ({
+        address: XP_ADDRESS, abi: XP_ABI, functionName: "xp", args: [p],
+      })),
+      allowFailure: true,
+    });
+    await Promise.all(
+      players.map((p, i) => {
+        const r = results[i];
+        const xp = r.status === "success" ? Number(r.result as bigint) : 0;
+        return grantFreezesFor(p, levelForXp(xp));
+      })
+    );
   } catch (e) {
-    console.warn(`Oracle: XP award failed: ${(e as Error).message}`);
+    console.warn(`Oracle: freeze grant pass failed: ${(e as Error).message}`);
   }
 
   // Streak-freeze (Phase 2b): bridge a returning player's single missed day with
