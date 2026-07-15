@@ -8,7 +8,6 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePreviousRoundRefund } from "@/hooks/usePreviousRoundRefund";
 import { useTodayActivity } from "@/hooks/useTodayActivity";
 import { useProfile } from "@/hooks/useProfile";
-import { xpForDay } from "@/lib/xp";
 import { pseudonymFor, monogram } from "@/lib/pseudonym";
 import StreakCard from "@/components/StreakCard";
 import RoundTimer from "@/components/RoundTimer";
@@ -18,7 +17,8 @@ import ResolveRoundButton from "@/components/ResolveRoundButton";
 import Leaderboard from "@/components/Leaderboard";
 import WalletBadge from "@/components/WalletBadge";
 import LegalLinks from "@/components/Footer";
-import { StreakIcon, ScoreIcon } from "@/components/icons";
+import DailyXpCard from "@/components/DailyXpCard";
+import { StreakIcon } from "@/components/icons";
 import { roundDayIndex } from "@/lib/roundDay";
 import { useState } from "react";
 import OnboardingCarousel from "@/components/OnboardingCarousel";
@@ -60,7 +60,6 @@ export default function HomePage() {
   const name = address ? pseudonymFor(address) : "";
   const isReturning = (profile?.xp ?? 0) > 0;
   const streak = Number(stats?.streak ?? 0);
-  const dailyXp = xpForDay(streak + 1);
 
   return (
     <main className="pt-9 space-y-5">
@@ -161,41 +160,7 @@ export default function HomePage() {
 
       {/* Daily XP — make the everyday reward loop obvious */}
       {isConnected && stats?.entered && (
-        <div className="card !p-4 relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="chip chip-forest w-[30px] h-[30px]"><ScoreIcon /></div>
-              <b className="font-display text-sm font-semibold">Daily XP</b>
-            </div>
-            <span className="font-display text-[15px] font-semibold text-forest num">+{dailyXp} XP today</span>
-          </div>
-          <div className="flex gap-1.5">
-            {[0, 1, 2, 3, 4, 5, 6].map((d) => {
-              const done = currentDayIndex >= 0 && d < currentDayIndex;
-              const today = d === currentDayIndex;
-              return (
-                <div key={d} className="flex-1 flex flex-col items-center gap-1">
-                  <div
-                    className={`w-full max-w-[30px] aspect-square rounded-full grid place-items-center font-display font-semibold text-[10px] num ${
-                      done
-                        ? "bg-forest text-white"
-                        : today
-                        ? "bg-amber text-white ring-[3px] ring-amber-tint"
-                        : "bg-paper-deep text-ink-faint"
-                    }`}
-                  >
-                    {d + 1}
-                  </div>
-                  <span className={`text-[8.5px] num ${today ? "text-amber font-semibold" : "text-ink-mute"}`}>
-                    +{xpForDay(d + 1)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="text-[10.5px] text-ink-mute mt-2.5">Send a transaction daily to earn XP.</div>
-          <span className="absolute left-4 right-4 bottom-0 h-[3px] rounded-full bg-forest" />
-        </div>
+        <DailyXpCard address={address} currentDayIndex={currentDayIndex} />
       )}
 
       {/* Streak card (if entered) */}
