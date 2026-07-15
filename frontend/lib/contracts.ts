@@ -19,6 +19,10 @@ export const USDT_ADDRESS =
   ((process.env.NEXT_PUBLIC_USDT_ADDRESS || "").trim() as `0x${string}`) ||
   "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"; // Celo mainnet USDT (6 decimals)
 
+export const XP_ADDRESS =
+  ((process.env.NEXT_PUBLIC_XP_ADDRESS || "").trim() as `0x${string}`) ||
+  "0x0000000000000000000000000000000000000000";
+
 /**
  * Network constants. These default to Celo mainnet so the app works without
  * any env vars set on Vercel. An env var still overrides the default, which
@@ -232,6 +236,55 @@ export const VAULT_ABI = [
       { name: "third", type: "address", indexed: false },
       { name: "pot", type: "uint256", indexed: false },
       { name: "protocolFee", type: "uint256", indexed: false },
+    ],
+  },
+] as const;
+
+export const XP_ABI = [
+  {
+    name: "claimDaily",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: "xp",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "lastClaimDay",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "", type: "uint32" }],
+  },
+  {
+    name: "canClaim",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    name: "dailyXp",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  // Events
+  {
+    name: "Claimed",
+    type: "event",
+    inputs: [
+      { name: "player", type: "address", indexed: true },
+      { name: "dayIndex", type: "uint32", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+      { name: "newTotal", type: "uint256", indexed: false },
     ],
   },
 ] as const;

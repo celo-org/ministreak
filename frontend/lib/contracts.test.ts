@@ -46,4 +46,10 @@ describe("network constants (env-overridable defaults)", () => {
     const c = await loadConstants();
     expect(c.ENTRY_FEE).toBe(100000n);
   });
+
+  it("XP_ADDRESS falls back to the zero address when env is unset", async () => {
+    vi.stubEnv("NEXT_PUBLIC_XP_ADDRESS", "");
+    const c = await loadConstants();
+    expect(c.XP_ADDRESS).toBe("0x0000000000000000000000000000000000000000");
+  });
 });
