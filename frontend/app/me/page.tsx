@@ -5,7 +5,10 @@ import { useCurrentRound } from "@/hooks/useCurrentRound";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { useProfile } from "@/hooks/useProfile";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useTodayActivity } from "@/hooks/useTodayActivity";
 import { pseudonymFor, shortAddress, monogram } from "@/lib/pseudonym";
+import { roundDayIndex } from "@/lib/roundDay";
+import { optimisticStreak } from "@/lib/optimisticStreak";
 import { StreakIcon, ScoreIcon, FreezeIcon, TrophyIcon } from "@/components/icons";
 import WalletBadge from "@/components/WalletBadge";
 
@@ -14,7 +17,28 @@ export default function MePage() {
   const { data: round } = useCurrentRound();
   const { stats } = usePlayerStats(round?.roundId, address);
   const { profile } = useProfile(address);
-  const { data: lb } = useLeaderboard(round?.roundId?.toString());
+  const { hasActivityToday } = useTodayActivity(address, round);
+
+  // Live streak (optimistic ~1 min), matching the Home card + the leaderboard.
+  const currentDayIndex = round
+    ? roundDayIndex(round.startTime, Math.floor(Date.now() / 1000))
+    : -1;
+  const todayDone =
+    !!stats?.entered &&
+    stats.lastValidDay !== 255 &&
+    stats.lastValidDay === currentDayIndex;
+  const selfStreak = optimisticStreak({
+    onChainStreak: Number(stats?.streak ?? 0),
+    lastValidDay: stats?.lastValidDay,
+    currentDayIndex,
+    hasActivityToday,
+    todayDone,
+  });
+
+  const { data: lb } = useLeaderboard(
+    round?.roundId?.toString(),
+    address ? { address, streak: selfStreak } : undefined
+  );
 
   if (!isConnected || !address) {
     return (
@@ -34,8 +58,6 @@ export default function MePage() {
 
   const name = pseudonymFor(address);
   const level = profile?.level ?? 1;
-  const streak = Number(stats?.streak ?? 0);
-  const score = Number(stats?.txCount ?? 0);
   const freezes = profile?.freezeTokens ?? 0;
   const xpInto = profile?.xpIntoLevel ?? 0;
   const xpFor = profile?.xpForNextLevel ?? 1;
@@ -44,6 +66,12 @@ export default function MePage() {
   const myRow = entries.find((e) => e.address.toLowerCase() === address.toLowerCase());
   const rank = myRow?.rank;
   const total = entries.length;
+
+  // Streak + Score come from the connected player's live leaderboard row so the
+  // profile matches Home/the board (provisional for all, optimistic-bumped for
+  // self); fall back to on-chain until the row loads.
+  const streak = myRow?.streak ?? selfStreak;
+  const score = myRow?.txCount ?? Number(stats?.txCount ?? 0);
 
   const pct = Math.min(100, Math.round((xpInto / Math.max(1, xpFor)) * 100));
 
