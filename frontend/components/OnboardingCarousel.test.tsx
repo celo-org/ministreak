@@ -54,4 +54,15 @@ describe("OnboardingCarousel", () => {
     expect(screen.getByText(/Welcome to MiniStreak/i)).toBeInTheDocument();
     expect(screen.queryByText(/How you win/i)).not.toBeInTheDocument();
   });
+
+  it("jumps to a screen when its progress dot is clicked (including going back)", () => {
+    render(<OnboardingCarousel open onDismiss={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i })); // -> screen 2
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i })); // -> screen 3
+    expect(screen.getByText(/How you win/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Go to step 1/i })); // back to screen 1
+    expect(screen.getByText(/Welcome to MiniStreak/i)).toBeInTheDocument();
+    expect(screen.queryByText(/How you win/i)).not.toBeInTheDocument();
+  });
 });

@@ -115,6 +115,24 @@ export default function OnboardingCarousel({
       </div>
 
       <div className="flex flex-col items-center gap-4 pb-12">
+        <div className="flex items-center justify-center gap-1">
+          {SCREENS.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setIndex(i)}
+              aria-label={`Go to step ${i + 1}`}
+              aria-current={i === index ? "step" : undefined}
+              className="p-2"
+            >
+              <span
+                className={`block h-1.5 w-1.5 rounded-full transition-colors ${
+                  i === index ? "bg-forest" : "bg-paper-deep"
+                }`}
+              />
+            </button>
+          ))}
+        </div>
         <button
           onClick={next}
           aria-label={isLast ? "Start playing" : "Continue"}
@@ -130,14 +148,6 @@ export default function OnboardingCarousel({
             />
           </svg>
         </button>
-        <div className="flex items-center justify-center gap-2">
-          {SCREENS.map((_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 w-1.5 rounded-full ${i === index ? "bg-forest" : "bg-paper-deep"}`}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );

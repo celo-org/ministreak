@@ -39,21 +39,21 @@ export default function Leaderboard({
     );
   }
 
-  const liveLabel = (() => {
-    if (updatedAt === undefined) return null;
-    const mins = Math.max(0, Math.floor(Date.now() / 1000 - updatedAt) / 60);
-    const rounded = Math.floor(mins);
-    return rounded < 1 ? "just now" : `${rounded}m ago`;
-  })();
+  // Only badge as LIVE while the provisional snapshot is actually fresh — within
+  // the oracle's ~10-min cadence plus a little refetch slack. Stale or absent →
+  // no badge (don't claim "live" on old data, and don't surface a growing age).
+  const LIVE_MAX_AGE_SEC = 11 * 60;
+  const isLive =
+    updatedAt !== undefined && Date.now() / 1000 - updatedAt <= LIVE_MAX_AGE_SEC;
 
   const displayedEntries = maxRows ? entries.slice(0, maxRows) : entries;
 
   return (
     <div className="space-y-2">
-      {liveLabel && (
+      {isLive && (
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-cap text-forest">
           <span className="h-1.5 w-1.5 rounded-full bg-forest animate-pulse" />
-          LIVE · updated {liveLabel}
+          LIVE
         </div>
       )}
 

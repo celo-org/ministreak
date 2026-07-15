@@ -58,7 +58,17 @@ export default function HomePage() {
 
   const name = address ? pseudonymFor(address) : "";
   const isReturning = (profile?.xp ?? 0) > 0;
-  const streak = Number(stats?.streak ?? 0);
+
+  // Live streak: the on-chain streak only advances at the end-of-day submission,
+  // so the moment today's tx is detected (via useTodayActivity, ~1 min) reflect
+  // it optimistically — the count feels live, matching the "Today's in" pill.
+  const onChainStreak = Number(stats?.streak ?? 0);
+  const activeTodayPending = hasActivityToday && !todayDone;
+  const streak = !activeTodayPending
+    ? onChainStreak
+    : stats?.lastValidDay === currentDayIndex - 1
+    ? onChainStreak + 1 // today continues yesterday's streak
+    : 1; // first active day of the round, or returning after a gap → today = 1
 
   return (
     <main className="pt-9 space-y-5">
@@ -165,7 +175,7 @@ export default function HomePage() {
       {/* Streak card (if entered) */}
       {isConnected && stats?.entered && (
         <StreakCard
-          streak={Number(stats.streak)}
+          streak={streak}
           todayDone={todayDone || hasActivityToday}
           isLoading={statsLoading}
           profile={profile ?? undefined}
