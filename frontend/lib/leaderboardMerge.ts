@@ -14,6 +14,24 @@ function prizeFor(rank: number, distributable: number): string {
   return "0.00";
 }
 
+/** Sort by the contract's order (streak → Score → uniqueTo) and (re)assign rank + prize. */
+function rankAndPrize(
+  entries: LeaderboardEntry[],
+  distributable: number
+): LeaderboardEntry[] {
+  const sorted = [...entries].sort(
+    (a, b) =>
+      b.streak - a.streak ||
+      b.txCount - a.txCount ||
+      b.uniqueToCount - a.uniqueToCount
+  );
+  return sorted.map((entry, i) => ({
+    ...entry,
+    rank: i + 1,
+    estimatedPrize: prizeFor(i + 1, distributable),
+  }));
+}
+
 export function mergeProvisional(
   entries: LeaderboardEntry[],
   snapshot: ProvisionalSnapshot | null,
@@ -32,16 +50,29 @@ export function mergeProvisional(
     };
   });
 
-  merged.sort(
-    (a, b) =>
-      b.streak - a.streak ||
-      b.txCount - a.txCount ||
-      b.uniqueToCount - a.uniqueToCount
-  );
+  return rankAndPrize(merged, distributable);
+}
 
-  return merged.map((entry, i) => ({
-    ...entry,
-    rank: i + 1,
-    estimatedPrize: prizeFor(i + 1, distributable),
-  }));
+/**
+ * Client-side optimistic bump for the CONNECTED player's own row: reflect
+ * today's tx (detected via Blockscout ~1 min) as a streak increment before the
+ * end-of-day on-chain submission, then re-rank/re-prize. Never lowers a streak,
+ * and only touches the one matching row (other players rely on the provisional
+ * snapshot). Display-only.
+ */
+export function applySelfStreak(
+  entries: LeaderboardEntry[],
+  address: string | undefined,
+  streak: number,
+  distributable: number
+): LeaderboardEntry[] {
+  if (!address || streak <= 0) return entries;
+  const lower = address.toLowerCase();
+  let changed = false;
+  const bumped = entries.map((entry) => {
+    if (entry.address.toLowerCase() !== lower || streak <= entry.streak) return entry;
+    changed = true;
+    return { ...entry, streak };
+  });
+  return changed ? rankAndPrize(bumped, distributable) : entries;
 }
