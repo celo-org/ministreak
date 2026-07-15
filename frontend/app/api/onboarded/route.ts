@@ -4,6 +4,8 @@ import { readProfile } from "@/lib/oracle/profileStore";
 
 // Per-wallet onboarding gate. Never cached.
 export const dynamic = "force-dynamic";
+// Bypass Vercel's Data Cache for the @vercel/kv read (see /api/provisional).
+export const fetchCache = "force-no-store";
 
 // GET ?address= → { onboarded }. A wallet is "onboarded" if it has explicitly
 // finished the intro OR already has an XP profile (a player from before this
