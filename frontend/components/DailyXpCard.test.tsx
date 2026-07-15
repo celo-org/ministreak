@@ -32,6 +32,7 @@ function setXp(over: Partial<ReturnType<typeof useXp>> = {}) {
   mockXp.mockReturnValue({
     xp: 0,
     canClaim: true,
+    canClaimKnown: true,
     refetch,
     level: 1,
     xpIntoLevel: 0,
@@ -58,6 +59,15 @@ describe("DailyXpCard", () => {
     const btn = screen.getByRole("button", { name: /Claimed \+10 today/ });
     expect(btn).toBeInTheDocument();
     expect(btn).toBeDisabled();
+  });
+
+  it("shows a Checking state (not Claimed) when canClaimKnown is false", () => {
+    setXp({ canClaim: false, canClaimKnown: false });
+    render(<DailyXpCard address="0xPlayer" currentDayIndex={2} />);
+    const btn = screen.getByRole("button", { name: /Checking…/ });
+    expect(btn).toBeInTheDocument();
+    expect(btn).toBeDisabled();
+    expect(screen.queryByText(/Claimed \+10 today/)).not.toBeInTheDocument();
   });
 
   it("calls claim() when the claim button is clicked", async () => {

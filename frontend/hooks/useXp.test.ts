@@ -27,6 +27,7 @@ describe("useXp", () => {
 
     expect(result.current.xp).toBe(150);
     expect(result.current.canClaim).toBe(true);
+    expect(result.current.canClaimKnown).toBe(true);
 
     // Derived level/xpIntoLevel/xpForNextLevel must match xpProgress(xp) directly.
     const expected = xpProgress(150);
@@ -46,14 +47,16 @@ describe("useXp", () => {
     const { result } = renderHook(() => useXp("0xPlayer"));
 
     expect(result.current.canClaim).toBe(false);
+    expect(result.current.canClaimKnown).toBe(true);
   });
 
-  it("reports canClaim=false when the read data is undefined (loading/unset)", () => {
+  it("reports canClaim=false and canClaimKnown=false when the read data is undefined (loading/unset)", () => {
     useReadContract.mockImplementation(() => ({ data: undefined, refetch: vi.fn() }));
 
     const { result } = renderHook(() => useXp("0xPlayer"));
 
     expect(result.current.canClaim).toBe(false);
+    expect(result.current.canClaimKnown).toBe(false);
     expect(result.current.xp).toBe(0);
   });
 

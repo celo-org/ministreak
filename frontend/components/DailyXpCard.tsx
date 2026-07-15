@@ -15,7 +15,7 @@ interface DailyXpCardProps {
 }
 
 export default function DailyXpCard({ address, currentDayIndex }: DailyXpCardProps) {
-  const { canClaim, refetch } = useXp(address);
+  const { canClaim, canClaimKnown, refetch } = useXp(address);
   const { claim, step, error, reset } = useClaimXp();
 
   const { data: dailyXpRaw } = useReadContract({
@@ -32,8 +32,9 @@ export default function DailyXpCard({ address, currentDayIndex }: DailyXpCardPro
   }, [step, refetch]);
 
   const claiming = step === "claiming";
-  const claimed = !canClaim || step === "done";
+  const claimed = step === "done" || (canClaimKnown && !canClaim);
   const hasError = step === "error";
+  const checking = !hasError && !claiming && step !== "done" && !canClaimKnown;
 
   return (
     <div className="card !p-4 relative overflow-hidden">
@@ -83,10 +84,12 @@ export default function DailyXpCard({ address, currentDayIndex }: DailyXpCardPro
         <button
           type="button"
           onClick={() => claim()}
-          disabled={claimed || claiming}
+          disabled={claimed || claiming || checking}
           className="btn-primary mt-3 gap-1.5 disabled:opacity-100 disabled:bg-forest-tint disabled:text-forest disabled:shadow-none"
         >
-          {claiming ? (
+          {checking ? (
+            "Checking…"
+          ) : claiming ? (
             "Claiming…"
           ) : claimed ? (
             <>

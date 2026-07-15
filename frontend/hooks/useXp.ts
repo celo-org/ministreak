@@ -21,5 +21,11 @@ export function useXp(address?: string) {
   });
 
   const xp = xpRaw ? Number(xpRaw as bigint) : 0;
-  return { xp, canClaim: canClaim === true, refetch, ...xpProgress(xp) };
+  return {
+    xp,
+    canClaim: canClaim === true,
+    canClaimKnown: canClaim !== undefined,
+    refetch,
+    ...xpProgress(xp),
+  };
 }
