@@ -16,7 +16,7 @@ interface DailyXpCardProps {
 
 export default function DailyXpCard({ address, currentDayIndex }: DailyXpCardProps) {
   const { canClaim, refetch } = useXp(address);
-  const { claim, step } = useClaimXp();
+  const { claim, step, error, reset } = useClaimXp();
 
   const { data: dailyXpRaw } = useReadContract({
     address: XP_ADDRESS,
@@ -33,6 +33,7 @@ export default function DailyXpCard({ address, currentDayIndex }: DailyXpCardPro
 
   const claiming = step === "claiming";
   const claimed = !canClaim || step === "done";
+  const hasError = step === "error";
 
   return (
     <div className="card !p-4 relative overflow-hidden">
@@ -69,38 +70,49 @@ export default function DailyXpCard({ address, currentDayIndex }: DailyXpCardPro
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={() => claim()}
-        disabled={claimed || claiming}
-        className="btn-primary mt-3 gap-1.5 disabled:opacity-100 disabled:bg-forest-tint disabled:text-forest disabled:shadow-none"
-      >
-        {claiming ? (
-          "Claiming…"
-        ) : claimed ? (
-          <>
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 16 16"
-              fill="none"
-              aria-hidden="true"
-              className="flex-shrink-0"
-            >
-              <path
-                d="M3 8.5L6.5 12L13 4.5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Claimed +{dailyXp} today
-          </>
-        ) : (
-          `Claim today's XP · +${dailyXp}`
-        )}
-      </button>
+      {hasError ? (
+        <div className="mt-3 space-y-2">
+          <div className="px-3 py-2 rounded-xl bg-coral-tint border border-coral/40 text-coral text-[12.5px]">
+            {error || "Claim failed"}
+          </div>
+          <button type="button" onClick={reset} className="btn-secondary">
+            Try again
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => claim()}
+          disabled={claimed || claiming}
+          className="btn-primary mt-3 gap-1.5 disabled:opacity-100 disabled:bg-forest-tint disabled:text-forest disabled:shadow-none"
+        >
+          {claiming ? (
+            "Claiming…"
+          ) : claimed ? (
+            <>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+                className="flex-shrink-0"
+              >
+                <path
+                  d="M3 8.5L6.5 12L13 4.5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Claimed +{dailyXp} today
+            </>
+          ) : (
+            `Claim today's XP · +${dailyXp}`
+          )}
+        </button>
+      )}
 
       <div className="text-[10.5px] text-ink-mute mt-2.5">Claim your XP each day.</div>
       <span className="absolute left-4 right-4 bottom-0 h-[3px] rounded-full bg-forest" />

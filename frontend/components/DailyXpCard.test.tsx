@@ -66,4 +66,16 @@ describe("DailyXpCard", () => {
     await user.click(screen.getByRole("button", { name: /Claim today's XP/ }));
     expect(claim).toHaveBeenCalledTimes(1);
   });
+
+  it("shows the error message and a Try again button when the claim fails", async () => {
+    const reset = vi.fn();
+    setClaimXp({ step: "error", error: "Transaction rejected", reset });
+    const user = userEvent.setup();
+    render(<DailyXpCard address="0xPlayer" currentDayIndex={2} />);
+    expect(screen.getByText("Transaction rejected")).toBeInTheDocument();
+    const tryAgainBtn = screen.getByRole("button", { name: /Try again/ });
+    expect(tryAgainBtn).toBeInTheDocument();
+    await user.click(tryAgainBtn);
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
 });
