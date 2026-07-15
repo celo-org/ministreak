@@ -21,7 +21,7 @@ async function main() {
   }
 
   const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf-8"));
-  const { vault, oracle, usdt } = deployment.contracts;
+  const { vault, oracle, usdt, streakXp } = deployment.contracts;
   const treasury = deployment.treasury;
   const oracleHotWallet = deployment.oracleHotWallet;
 
@@ -56,6 +56,22 @@ async function main() {
       console.log("StreakOracle already verified.");
     } else {
       console.error("StreakOracle verification failed:", e.message);
+    }
+  }
+
+  // Verify StreakXP
+  console.log(`\nVerifying StreakXP at ${streakXp}...`);
+  try {
+    await run("verify:verify", {
+      address: streakXp,
+      constructorArguments: [vault],
+    });
+    console.log("StreakXP verified!");
+  } catch (e: any) {
+    if (e.message?.includes("Already Verified")) {
+      console.log("StreakXP already verified.");
+    } else {
+      console.error("StreakXP verification failed:", e.message);
     }
   }
 

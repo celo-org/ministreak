@@ -45,17 +45,19 @@ export const BLOCK_EXPLORERS: Record<number, string> = {
 
 export const DEPLOYED_ADDRESSES: Record<
   number,
-  { miniStreak: `0x${string}`; oracle: `0x${string}`; usdt: `0x${string}` }
+  { miniStreak: `0x${string}`; oracle: `0x${string}`; usdt: `0x${string}`; streakXp: `0x${string}` }
 > = {
   [CHAIN_IDS.CELO_SEPOLIA]: {
     miniStreak: "0x911BD7790a581831BbE544bC782cc78659ce41b8",
     oracle:     "0x6827D8155eF79a7f2d8eA87f8E64b04b3E6936D7",
     usdt:       "0xd077A400968890Eacc75cdc901F0356c943e4fDb",
+    streakXp:   "0x0000000000000000000000000000000000000000", // TODO: fill after deploy
   },
   [CHAIN_IDS.CELO_MAINNET]: {
     miniStreak: "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
     oracle:     "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
     usdt:       "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e", // TODO: verify mainnet USDT address
+    streakXp:   "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
   },
 };
 
