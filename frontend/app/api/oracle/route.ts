@@ -68,7 +68,7 @@ export async function GET(request: Request) {
         walletClient as unknown as WalletClient,
         { vaultAddress, oracleAddress, apiKey }
       );
-      return NextResponse.json({ ok: true, ...result, errors: [] });
+      return NextResponse.json({ ok: true, ...result });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Oracle run failed: ${msg}`);

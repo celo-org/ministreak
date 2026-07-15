@@ -273,3 +273,30 @@ it("swallows a freeze-grant pass failure without aborting the run (non-fatal)", 
   expect(result.streaksSubmitted).toBe(1);
   vi.useRealTimers();
 });
+
+it("surfaces a failed provisional write in result.errors (does not throw)", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(Date.UTC(2026, 0, 7, 12, 0, 0)); // Wed -> currentDayIndex 2
+  const start = BigInt(Math.floor(Date.UTC(2026, 0, 5, 0, 0, 0) / 1000));
+  (getCurrentRound as any).mockResolvedValue({
+    roundId: 7n, startTime: start, endTime: start + BigInt(7 * 86400), players: [A], vaultAddress: VAULT,
+  });
+  (scanAllPlayers as any).mockResolvedValue([
+    { player: A, roundId: 7n, dayIndex: 1, txCount: 2, uniqueToCount: 2 }, // closed
+    { player: A, roundId: 7n, dayIndex: 2, txCount: 5, uniqueToCount: 3 }, // open (provisional)
+  ]);
+  (getPriorParticipants as any).mockResolvedValue({ prev: new Set(), prev2: new Set() });
+  (applyLoyalty as any).mockImplementation((q: any[]) => q);
+  (checkAlreadySubmitted as any).mockResolvedValue(new Set());
+  (batchSubmitStreaks as any).mockResolvedValue("0xhash");
+  publicClient.multicall.mockResolvedValue([{ status: "success", result: 0n }]);
+  (writeProvisional as any).mockRejectedValue(new Error("KV write quota exceeded"));
+
+  const result = await runOracleScan(publicClient, walletClient, { vaultAddress: VAULT, oracleAddress: ORACLE, apiKey: "k" });
+
+  // The failure is now visible in the response instead of only console.warn.
+  expect(result.errors.some((e) => e.includes("provisional write") && e.includes("KV write quota exceeded"))).toBe(true);
+  // ...and the run still completes and submits the closed day.
+  expect(result.streaksSubmitted).toBe(1);
+  vi.useRealTimers();
+});
