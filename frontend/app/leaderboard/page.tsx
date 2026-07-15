@@ -110,7 +110,7 @@ export default function LeaderboardPage() {
           </p>
         )}
       <p className="text-center text-xs text-ink-faint">
-        {showLast ? "Final results." : "Updates every 30 seconds."}
+        {showLast ? "Final results." : "Live standings update every few minutes."}
       </p>
     </main>
   );
