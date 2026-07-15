@@ -12,11 +12,11 @@ const req = (url: string) => new Request(url) as any;
 beforeEach(() => vi.clearAllMocks());
 
 describe("GET /api/profile", () => {
-  it("returns the derived profile (with level) for an address", async () => {
+  it("returns freeze tokens only for an address", async () => {
     (readProfile as any).mockResolvedValue({ xp: 175, cursor: { round: 7, day: 2 }, freezeTokens: 1, lastFreezeMilestone: 3, freezeUsedRound: null });
     const res = await GET(req("http://x/api/profile?address=0xABC"));
     expect(await res.json()).toEqual({
-      profile: { xp: 175, freezeTokens: 1, level: 2, xpIntoLevel: 75, xpForNextLevel: 150 },
+      profile: { freezeTokens: 1 },
     });
     expect(readProfile).toHaveBeenCalledWith("0xABC");
   });
