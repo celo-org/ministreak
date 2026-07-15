@@ -4,6 +4,8 @@ import { readProfile } from "@/lib/oracle/profileStore";
 // Public, read-only per-player freeze-token profile. XP now lives on-chain
 // (see hooks/useXp.ts). Never cached.
 export const dynamic = "force-dynamic";
+// Bypass Vercel's Data Cache for the @vercel/kv read (see /api/provisional).
+export const fetchCache = "force-no-store";
 
 export async function GET(req: Request) {
   const address = new URL(req.url).searchParams.get("address");
