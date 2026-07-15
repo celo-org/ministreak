@@ -10,6 +10,8 @@
   "contracts": {
     "vault": "0xcd125da0EC85c8414D39fa94011b607C2A5f17e5",
     "oracle": "0x2c08420187F96a69E0aB64a1507282786E4f474e",
-    "usdt": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"
-  }
+    "usdt": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+    "streakXp": "0x1675D33573E2b0DA54dfC53a97CFbC50D41Af60e"
+  },
+  "streakXpDeployedAt": "2026-07-15T12:17:19.725Z"
 }

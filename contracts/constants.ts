@@ -57,7 +57,7 @@ export const DEPLOYED_ADDRESSES: Record<
     miniStreak: "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
     oracle:     "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
     usdt:       "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e", // TODO: verify mainnet USDT address
-    streakXp:   "0x0000000000000000000000000000000000000000", // TODO: fill after mainnet deploy
+    streakXp:   "0x1675D33573E2b0DA54dfC53a97CFbC50D41Af60e", // deployed 2026-07-15
   },
 };
 
