@@ -9,6 +9,7 @@ import { useTodayActivity } from "@/hooks/useTodayActivity";
 import { pseudonymFor, shortAddress, monogram } from "@/lib/pseudonym";
 import { roundDayIndex } from "@/lib/roundDay";
 import { optimisticStreak } from "@/lib/optimisticStreak";
+import { useLoyaltyMultiplier } from "@/hooks/useLoyaltyMultiplier";
 import { StreakIcon, ScoreIcon, FreezeIcon, TrophyIcon } from "@/components/icons";
 import WalletBadge from "@/components/WalletBadge";
 
@@ -18,6 +19,7 @@ export default function MePage() {
   const { stats } = usePlayerStats(round?.roundId, address);
   const { profile } = useProfile(address);
   const { hasActivityToday } = useTodayActivity(address, round);
+  const multiplier = useLoyaltyMultiplier(address, round?.roundId);
 
   // Live streak (optimistic ~1 min), matching the Home card + the leaderboard.
   const currentDayIndex = round
@@ -106,8 +108,18 @@ export default function MePage() {
 
         <div className="stat chip-sky stat-tint-sky">
           <div className="chip chip-sky"><ScoreIcon /></div>
+          <span
+            title="Loyalty boost — enter consecutive rounds to raise it (max ×2)"
+            className={`absolute top-3 right-3 text-[10px] font-semibold px-1.5 py-0.5 rounded-full num ${
+              multiplier > 1 ? "bg-sky text-white" : "bg-white/70 text-ink-mute"
+            }`}
+          >
+            ×{multiplier}
+          </span>
           <div className="stat-big num">{score} <small>pts</small></div>
-          <div className="stat-sub">this week</div>
+          <div className="stat-sub">
+            {multiplier > 1 ? `this week · ×${multiplier} boost` : "this week"}
+          </div>
           <div className="stat-lab">Score</div>
         </div>
 
